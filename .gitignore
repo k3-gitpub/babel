@@ -1,6 +1,21 @@
+# Pygbag build output
+build/
+
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Virtual Environment
+# Virtual environment
+.venv/
 venv/
+env/
+
+# Distribution / packaging
+dist/
+*.egg-info/
+
+# IDE / Editor specific
+.vscode/
+.idea/
