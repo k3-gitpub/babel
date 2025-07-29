@@ -177,8 +177,28 @@ class TitleScene:
 
         # --- UI要素の描画 (手前) ---
         self.ui_manager._draw_text("Babel's Tower Shooter", self.title_font, config.YELLOW, (config.SCREEN_WIDTH / 2, 100), config.BLACK, config.UI_TITLE_OUTLINE_WIDTH)
-        info_text_y = self.slingshot_pos.y - 100
-        self.ui_manager._draw_text("Drag & Release to launch the ball!", self.info_font, config.WHITE, (config.SCREEN_WIDTH / 2, info_text_y), config.BLACK, 2)
+
+        # --- トレーニング説明エリアの描画 ---
+        area_center_y = config.SCREEN_HEIGHT - 100
+        box_width = 450
+        box_height = 100
+        box_rect = pygame.Rect(0, 0, box_width, box_height)
+        box_rect.center = (config.SCREEN_WIDTH / 2, area_center_y)
+
+        # 枠の背景（半透明）
+        bg_surface = pygame.Surface(box_rect.size, pygame.SRCALPHA)
+        bg_surface.fill((0, 0, 0, 100)) # 半透明の黒
+        screen.blit(bg_surface, box_rect.topleft)
+        # 枠線
+        pygame.draw.rect(screen, config.WHITE, box_rect, 2, border_radius=10)
+
+        # タイトルテキスト
+        title_y = box_rect.top + 30
+        self.ui_manager._draw_text("- Training -", self.info_font, config.YELLOW, (box_rect.centerx, title_y), config.BLACK, 2)
+        # 操作説明テキスト
+        info_y = box_rect.top + 70
+        self.ui_manager._draw_text("Drag & Release to launch the ball!", self.info_font, config.WHITE, (box_rect.centerx, info_y), config.BLACK, 2)
+
         self.ui_manager._draw_text("Copyright 2025 k3 - MIT License", self.license_font, config.WHITE, (config.SCREEN_WIDTH - 150, config.SCREEN_HEIGHT - 20), config.BLACK, 1)
 
         # スタートボタン (地面と区別しやすいように色を変更)
