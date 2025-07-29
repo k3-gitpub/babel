@@ -10,6 +10,12 @@ on:
   # Actionsタブから手動で実行することも可能にする
   workflow_dispatch:
 
+# 同時実行制御
+# 同じグループのワークフローがすでに実行中の場合、古いものをキャンセルして新しいものだけを実行する
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 # ワークフローの実行に必要な権限を設定
 permissions:
   contents: read
@@ -34,27 +40,39 @@ jobs:
         with:
           python-version: '3.11' # 使用するPythonのバージョン
 
-      # 3. Pygameのビルドに必要なシステムライブラリをインストール
+      # 3. pipのキャッシュを設定
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          # requirements.txt を使用している場合は、そのハッシュをキーに含めるとより効果的です
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 4. Pygameのビルドに必要なシステムライブラリをインストール
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libffi-dev pkg-config
 
-      # 4. Pythonパッケージをインストール (pygameも明示的にインストール)
+      # 5. requirements.txt を使ってPythonパッケージをインストール
       - name: Install Python packages
-        run: pip install pygbag pygame
+        run: pip install -r requirements.txt
 
-      # 5. PygbagでWebアプリをビルドする
+      # 6. PygbagでWebアプリをビルドする
+      # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
+      # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag game.py --build' のように変更してください。
       - name: Build with pygbag
         run: python -m pygbag . --build
 
-      # 6. ビルド成果物（Webサイトのファイル）をアップロードする
+      # 7. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-      # 7. アップロードした成果物をGitHub Pagesにデプロイする
+      # 8. アップロードした成果物をGitHub Pagesにデプロイする
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
