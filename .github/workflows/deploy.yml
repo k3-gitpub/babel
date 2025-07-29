@@ -34,22 +34,27 @@ jobs:
         with:
           python-version: '3.11' # 使用するPythonのバージョン
 
-      # 3. Pygbagをインストールする
-      - name: Install pygbag
-        run: pip install pygbag
+      # 3. Pygameのビルドに必要なシステムライブラリをインストール
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 
-      # 4. PygbagでWebアプリをビルドする
+      # 4. Pythonパッケージをインストール (pygameも明示的にインストール)
+      - name: Install Python packages
+        run: pip install pygbag pygame
+
+      # 5. PygbagでWebアプリをビルドする
       - name: Build with pygbag
         run: python -m pygbag . --build
 
-      # 5. ビルド成果物（Webサイトのファイル）をアップロードする
+      # 6. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-      # 6. アップロードした成果物をGitHub Pagesにデプロイする
+      # 7. アップロードした成果物をGitHub Pagesにデプロイする
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
