@@ -4,6 +4,7 @@
 
 import pygame
 import math
+import asyncio # Webアプリ(Pygbag)化のために追加
 import random
 import config
 from bird import Bird
@@ -67,7 +68,7 @@ def reset_game(slingshot_x, initial_tower_top_y, ui_manager):
         heart_items, particles, game_logic_manager, slingshot_pos
     )
 
-def main():
+async def main(): # Webアプリ化のため非同期関数に変更
     """ゲームのメインループ"""
     pygame.init()
     screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
@@ -99,13 +100,12 @@ def main():
     mouse_pos = pygame.math.Vector2(0, 0) # マウスカーソルの位置を保持
     recall_button_rect = None # 呼び戻しボタンのRectを保持する変数
 
-    running = True
-
-    while running:
+    # Webアプリではブラウザのタブを閉じるまで実行し続けるため、無限ループに変更
+    while True:
         # --- イベント処理 (Input) ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                return # ループを抜けてプログラムを終了させる
             
             # キーボード入力
             if event.type == pygame.KEYDOWN:
@@ -288,9 +288,9 @@ def main():
         ui_manager.draw_ui_overlays()
 
         pygame.display.flip()
+        await asyncio.sleep(0) # ★最重要: ブラウザに処理を一旦返し、フリーズを防ぐ
         clock.tick(config.FPS)
 
-    pygame.quit()
-
 if __name__ == '__main__':
-    main()
+    # 非同期関数を実行するために asyncio.run() を使用
+    asyncio.run(main())
