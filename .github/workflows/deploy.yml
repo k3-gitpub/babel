@@ -62,9 +62,9 @@ jobs:
 
       # 6. PygbagでWebアプリをビルドする
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
-      # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag game.py --build' のように変更してください。
+      # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        run: python -m pygbag . --build
+        run: python -m pygbag --build .
 
       # 7. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
