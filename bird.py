@@ -209,6 +209,22 @@ class Bird:
     def is_clicked(self, mouse_pos):
         """マウスカーソルが弾の上にあるか判定する"""
         return self.pos.distance_to(mouse_pos) < self.radius
+    
+    def update_for_title_screen(self, slingshot_pos):
+        """
+        タイトル画面専用の更新処理。ボールが画面外に出ることを許可し、
+        画面下に大きく外れた場合や、動きが止まった場合にリセットする。
+        """
+        if not self.is_flying:
+            return
+
+        # 既存のupdateを呼び出して重力などを適用
+        self.update()
+
+        # リセット条件: 画面下に大きく外れた、または速度がほぼゼロになった
+        if self.pos.y > config.SCREEN_HEIGHT + self.radius * 5 or \
+           self.velocity.length_squared() < config.BIRD_RESET_MIN_VELOCITY_SQUARED:
+            self.reset(slingshot_pos)
 
     def reset(self, new_start_pos=None):
         """

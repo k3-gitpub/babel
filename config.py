@@ -12,9 +12,12 @@ RED = (211, 47, 47)
 BLUE = (66, 165, 245)
 GRAY = (158, 158, 158)
 GREEN = (34, 139, 34)
+GREEN_HOVER = (50, 180, 50) # ボタンホバー用の少し明るい緑
 WOOD = (139, 69, 19)
 YELLOW = (255, 235, 59)
 AQUA = (0, 255, 255)
+ORANGE = (255, 165, 0)
+ORANGE_HOVER = (255, 200, 0) # ボタンホバー用の少し明るいオレンジ
 
 # 物理定数
 GRAVITY = 0.5
@@ -187,6 +190,11 @@ BOSS_HALO_COLOR = (255, 235, 59) # 黄色 (YELLOWと同じ)
 
 # ステージ設定
 STAGE_CLEAR_WAIT_TIME = 2500 # ステージクリア表示から次のステージへ移るまでの時間 (ms)
+
+# タイトル画面設定
+TITLE_ENEMY_SPAWN_INTERVAL = 8000 # にぎやかしの敵が出現する間隔 (ms)
+TITLE_ENEMY_MAX_COUNT = 100         # にぎやかしの敵の最大数
+TITLE_TOWER_BLOCKS = 7            # タイトル画面のタワーのブロック数
 
 # 敵の設定
 ENEMY_SPAWN_INTERVAL = 5000 # 敵が出現する間隔 (ミリ秒)
