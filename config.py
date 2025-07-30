@@ -25,6 +25,11 @@ LAUNCH_POWER_MULTIPLIER = 0.3
 FRICTION = 0.99 # 摩擦係数（1に近いほど滑る）
 BOUNCINESS = 0.5 # 反発係数（0に近いほど跳ねない）
 
+# タイトル画面設定
+TITLE_ENEMY_SPAWN_INTERVAL = 8000 # にぎやかしの敵が出現する間隔 (ms)
+TITLE_ENEMY_MAX_COUNT = 20         # にぎやかしの敵の最大数
+TITLE_TOWER_BLOCKS = 7            # タイトル画面のタワーのブロック数
+
 # 弾の設定
 MAX_PULL_DISTANCE = 100 # スリングショットから引っ張れる最大距離
 BIRD_DEFAULT_RADIUS = 20 # 弾の初期半径
@@ -131,6 +136,12 @@ CLOUD_FLOAT_AMPLITUDE = 4 # ふわふわ動く振れ幅（ピクセル単位）
 UI_COUNTER_OUTLINE_WIDTH = 2 # 討伐数カウンターのアウトラインの太さ
 UI_TITLE_OUTLINE_WIDTH = 3 # タイトルテキストのアウトラインの太さ
 
+# DRAG表示設定
+DRAG_TEXT_FONT_SIZE = 48 # "DRAG"の文字サイズ
+DRAG_TEXT_BLINK_INTERVAL = 600 # 点滅の間隔 (ms)
+DRAG_TEXT_COLOR = WHITE
+DRAG_PROMPT_DELAY = 2000 # 入力がない場合にDRAG表示を再表示するまでの待機時間 (ms)
+
 # コンボ表示設定
 COMBO_DURATION = 1000 # コンボ表示の持続時間 (ms)
 COMBO_MOVE_Y = 100 # コンボ表示が上に移動する距離 (pixels)
@@ -191,10 +202,6 @@ BOSS_HALO_COLOR = (255, 235, 59) # 黄色 (YELLOWと同じ)
 # ステージ設定
 STAGE_CLEAR_WAIT_TIME = 2500 # ステージクリア表示から次のステージへ移るまでの時間 (ms)
 
-# タイトル画面設定
-TITLE_ENEMY_SPAWN_INTERVAL = 8000 # にぎやかしの敵が出現する間隔 (ms)
-TITLE_ENEMY_MAX_COUNT = 100         # にぎやかしの敵の最大数
-TITLE_TOWER_BLOCKS = 7            # タイトル画面のタワーのブロック数
 
 # 敵の設定
 ENEMY_SPAWN_INTERVAL = 5000 # 敵が出現する間隔 (ミリ秒)

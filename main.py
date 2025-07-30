@@ -80,6 +80,10 @@ class Game:
         self.mouse_pos = pygame.math.Vector2(0, 0)
         self.recall_button_rect = None
         self.running = True  # ゲームループの実行フラグ
+        # DRAG表示関連
+        self.show_drag_indicator = True
+        self.last_activity_time = pygame.time.get_ticks()
+        self.was_bird_flying = False
         self.game_state = "PLAYING"  # ゲームをリセットしたら、状態を「プレイ中」にする
 
     def _handle_events(self):
@@ -110,6 +114,7 @@ class Game:
                     if self.recall_button_rect and self.recall_button_rect.collidepoint(event.pos):
                         self.bird.reset(self.slingshot_pos)
                         self.game_logic_manager.is_bird_callable = False
+                        self.last_activity_time = pygame.time.get_ticks()
                         print("Bird recalled manually.")
 
                 # マウス入力
@@ -118,6 +123,8 @@ class Game:
                         if event.button == 1 and self.bird.is_clicked(event.pos):
                             self.is_dragging = True
                             self.mouse_pos.x, self.mouse_pos.y = event.pos
+                            self.show_drag_indicator = False
+                            self.last_activity_time = pygame.time.get_ticks()
                     
                     if event.type == pygame.MOUSEMOTION:
                         if self.is_dragging:
@@ -128,10 +135,13 @@ class Game:
                             self.is_dragging = False
                             launch_vector = self.slingshot_pos - self.bird.pos
                             self.bird.launch(launch_vector)
+                            self.last_activity_time = pygame.time.get_ticks()
                             self.trajectory_points.clear()
 
     def _update_state(self):
         """状態更新 (Update)"""
+        current_time = pygame.time.get_ticks()
+
         # タイトル画面でも背景が動くように、雲は常に更新
         for cloud in self.clouds: cloud.update()
 
@@ -139,6 +149,17 @@ class Game:
             # タイトルシーンの状態を更新
             self.title_scene.update()
         elif self.game_state == "PLAYING":
+            # --- DRAG表示のロジック ---
+            # ボールがちょうどリセットされた瞬間を検知
+            if self.was_bird_flying and not self.bird.is_flying:
+                self.last_activity_time = current_time
+            self.was_bird_flying = self.bird.is_flying
+
+            # 入力待機状態で一定時間経過したら、DRAG表示を再度有効にする
+            if not self.is_dragging and not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
+                if current_time - self.last_activity_time > config.DRAG_PROMPT_DELAY:
+                    self.show_drag_indicator = True
+
             # プレイ中のみゲームオブジェクトの状態を更新
             self.slingshot_pos.y = self.tower.get_top_y() + config.SLINGSHOT_OFFSET_Y
 
@@ -211,6 +232,16 @@ class Game:
             if self.is_dragging:
                 pygame.draw.line(self.screen, config.BLACK, self.slingshot_pos, self.bird.pos, 5)
             
+            # --- DRAG表示 (点滅) ---
+            if self.show_drag_indicator and not self.is_dragging and not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
+                drag_text_pos = (self.bird.pos.x, self.bird.pos.y - self.bird.radius - 40)
+                self.ui_manager.draw_blinking_text(
+                    "DRAG",
+                    drag_text_pos,
+                    config.BLACK,
+                    2
+                )
+
             if self.game_logic_manager.is_bird_callable:
                 button_pos = self.slingshot_pos - pygame.math.Vector2(0, config.RECALL_BUTTON_OFFSET_Y)
                 self.recall_button_rect = self.ui_manager.draw_recall_button(button_pos)
