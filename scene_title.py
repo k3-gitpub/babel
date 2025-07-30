@@ -27,7 +27,8 @@ class TitleScene:
         self.ground = Ground()
 
         # --- シーン専用のオブジェクトを作成 ---
-        tower_x = config.SCREEN_WIDTH / 2 - config.TOWER_BLOCK_WIDTH / 2
+        # tower_x = config.SCREEN_WIDTH / 2 - config.TOWER_BLOCK_WIDTH / 2
+        tower_x = 180 # タワーの左端のX座標
         tower_top_y = config.GROUND_Y - (config.TITLE_TOWER_BLOCKS * config.TOWER_BLOCK_HEIGHT) # ブロックの高さ
         self.tower = Tower(tower_x, config.GROUND_Y, tower_top_y)
         
@@ -42,6 +43,9 @@ class TitleScene:
         self.is_dragging = False
         self.trajectory_points = []
         self.mouse_pos = pygame.math.Vector2(0, 0)
+        self.show_drag_indicator = True # DRAG表示用のフラグ
+        self.last_activity_time = pygame.time.get_ticks() # 最後の入力やボールリセットの時間
+        self.was_bird_flying = False # 前フレームでボールが飛んでいたか
 
         # にぎやかし用の敵を管理するリストとタイマー
         self.decorative_enemies = []
@@ -54,8 +58,10 @@ class TitleScene:
 
         # スタートボタンのRectを定義
         button_width, button_height = 200, 60
+
+        # スタートボタンの位置
         button_x = config.SCREEN_WIDTH / 2 - button_width / 2
-        button_y = config.SCREEN_HEIGHT - 200 # 画面下部に配置
+        button_y = config.SCREEN_HEIGHT * 3 / 4 - 100 # 画面下部に配置
         self.start_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
 
     def _spawn_decorative_enemy(self):
@@ -100,6 +106,8 @@ class TitleScene:
             if self.bird.is_clicked(event.pos):
                 self.is_dragging = True
                 self.mouse_pos.x, self.mouse_pos.y = event.pos
+                self.show_drag_indicator = False # ドラッグを開始したら非表示に
+                self.last_activity_time = pygame.time.get_ticks()
         
         if event.type == pygame.MOUSEMOTION and self.is_dragging:
             self.mouse_pos.x, self.mouse_pos.y = event.pos
@@ -109,12 +117,25 @@ class TitleScene:
             # ボールを発射する
             launch_vector = self.slingshot_pos - self.bird.pos
             self.bird.launch(launch_vector)
+            self.last_activity_time = pygame.time.get_ticks()
             self.trajectory_points.clear()
 
         return None
 
     def update(self):
         """タイトル画面のオブジェクトの状態を更新する。"""
+        current_time = pygame.time.get_ticks()
+
+        # ボールがちょうどリセットされた瞬間を検知
+        if self.was_bird_flying and not self.bird.is_flying:
+            self.last_activity_time = current_time
+        self.was_bird_flying = self.bird.is_flying
+
+        # 入力待機状態で一定時間経過したら、DRAG表示を再度有効にする
+        if not self.is_dragging and not self.bird.is_flying:
+            if current_time - self.last_activity_time > config.DRAG_PROMPT_DELAY:
+                self.show_drag_indicator = True
+
         # --- ドラッグ中の処理を追加 ---
         if self.is_dragging:
             self.bird.pos = self.mouse_pos.copy()
@@ -132,7 +153,6 @@ class TitleScene:
             self.bird.update_for_title_screen(self.slingshot_pos)
 
         # --- にぎやかし用の敵を時間差で出現させる ---
-        current_time = pygame.time.get_ticks()
         can_spawn = len(self.decorative_enemies) < config.TITLE_ENEMY_MAX_COUNT
         time_to_spawn = current_time - self.last_enemy_spawn_time > config.TITLE_ENEMY_SPAWN_INTERVAL
         if can_spawn and time_to_spawn:
@@ -175,15 +195,25 @@ class TitleScene:
 
         self.bird.draw(screen)
 
+        # --- DRAG表示 (点滅) ---
+        if self.show_drag_indicator and not self.is_dragging and not self.bird.is_flying:
+            drag_text_pos = (self.bird.pos.x, self.bird.pos.y - self.bird.radius - 40)
+            self.ui_manager.draw_blinking_text(
+                "DRAG",
+                drag_text_pos,
+                config.BLACK,
+                2
+            )
+
         # --- UI要素の描画 (手前) ---
         self.ui_manager._draw_text("Babel's Tower Shooter", self.title_font, config.YELLOW, (config.SCREEN_WIDTH / 2, 100), config.BLACK, config.UI_TITLE_OUTLINE_WIDTH)
 
-        # --- トレーニング説明エリアの描画 ---
-        area_center_y = config.SCREEN_HEIGHT - 100
+        # --- 操作説明エリアの描画 ---
+        area_center_y = config.SCREEN_HEIGHT / 4 + 100 # y座標
         box_width = 450
         box_height = 100
         box_rect = pygame.Rect(0, 0, box_width, box_height)
-        box_rect.center = (config.SCREEN_WIDTH / 2, area_center_y)
+        box_rect.center = (config.SCREEN_WIDTH * 2 / 4, area_center_y) # 操作説明ウィンドウの位置
 
         # 枠の背景（半透明）
         bg_surface = pygame.Surface(box_rect.size, pygame.SRCALPHA)
@@ -192,17 +222,19 @@ class TitleScene:
         # 枠線
         pygame.draw.rect(screen, config.WHITE, box_rect, 2, border_radius=10)
 
-        # タイトルテキスト
+        # 操作説明のタイトル
         title_y = box_rect.top + 30
-        self.ui_manager._draw_text("- Training -", self.info_font, config.YELLOW, (box_rect.centerx, title_y), config.BLACK, 2)
+        self.ui_manager._draw_text("- How To Play -", self.info_font, config.YELLOW, (box_rect.centerx, title_y), config.BLACK, 2)
+
         # 操作説明テキスト
         info_y = box_rect.top + 70
-        self.ui_manager._draw_text("Drag & Release to launch the ball!", self.info_font, config.WHITE, (box_rect.centerx, info_y), config.BLACK, 2)
-
-        self.ui_manager._draw_text("Copyright 2025 k3 - MIT License", self.license_font, config.WHITE, (config.SCREEN_WIDTH - 150, config.SCREEN_HEIGHT - 20), config.BLACK, 1)
+        self.ui_manager._draw_text("Drag & Release to Shoot the ball!", self.info_font, config.WHITE, (box_rect.centerx, info_y), config.BLACK, 2)
 
         # スタートボタン (地面と区別しやすいように色を変更)
         button_color = config.ORANGE_HOVER if is_hovered else config.ORANGE
         pygame.draw.rect(screen, button_color, self.start_button_rect, border_radius=15)
         pygame.draw.rect(screen, config.BLACK, self.start_button_rect, width=3, border_radius=15)
         self.ui_manager._draw_text("START", self.start_button_font, config.WHITE, self.start_button_rect.center, config.BLACK, 2)
+
+        # ライセンス表示
+        self.ui_manager._draw_text("Copyright 2025 k3 - MIT License", self.license_font, config.WHITE, (config.SCREEN_WIDTH - 150, config.SCREEN_HEIGHT - 20), config.BLACK, 1)

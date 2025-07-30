@@ -31,6 +31,7 @@ class UIManager:
         self.title_font = title_font
         self.boss_font = boss_font
         self.combo_font = combo_font
+        self.drag_font = pygame.font.Font(None, config.DRAG_TEXT_FONT_SIZE) # DRAG表示用のフォント
         self.combo_indicators = [] # 表示中のコンボテキストを保持するリスト
 
     def add_combo_indicator(self, position, combo_count):
@@ -321,3 +322,23 @@ class UIManager:
     def draw_ui_overlays(self):
         """HUDや他のUI要素の上に描画されるべき要素（コンボ表示など）をまとめて描画する。"""
         self._draw_combo_indicators()
+
+    def draw_blinking_text(self, text, center_pos, outline_color=None, outline_width=0):
+        """
+        指定されたテキストを点滅描画する。
+        :param text: 描画する文字列
+        :param center_pos: 描画する中心座標
+        :param outline_color: アウトラインの色
+        :param outline_width: アウトラインの太さ
+        """
+        # 現在の時間を使って表示/非表示を切り替える
+        # (現在時間 // 点滅間隔) の結果が偶数か奇数かで判定
+        if (pygame.time.get_ticks() // config.DRAG_TEXT_BLINK_INTERVAL) % 2 == 0:
+            self._draw_text(
+                text,
+                self.drag_font,
+                config.DRAG_TEXT_COLOR,
+                center_pos,
+                outline_color,
+                outline_width
+            )
