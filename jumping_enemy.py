@@ -128,12 +128,12 @@ class JumpingEnemy(Enemy):
             # --- 目の描画処理 (Enemyクラスから流用し、円形に合わせる) ---
             if self.draw_eyes:
                 # 1. 目の大きさを計算
-                eye_radius = current_radius * config.GROUND_ENEMY_EYE_SIZE_SCALE
+                eye_radius = current_radius * config.JUMPING_ENEMY_EYE_SIZE_SCALE
                 pupil_radius = eye_radius * config.ENEMY_EYE_PUPIL_SCALE
 
                 # 2. 目の位置を計算
-                offset_x = current_radius * config.GROUND_ENEMY_EYE_OFFSET_X_SCALE
-                offset_y = current_radius * config.GROUND_ENEMY_EYE_OFFSET_Y_SCALE
+                offset_x = config.JUMPING_ENEMY_EYE_OFFSET_X_SCALE
+                offset_y = config.JUMPING_ENEMY_EYE_OFFSET_Y_SCALE
                 eye_center = (center_pos[0] + offset_x, center_pos[1] + offset_y)
 
                 # 3. 描画

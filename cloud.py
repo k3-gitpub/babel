@@ -24,7 +24,7 @@ class Cloud:
             offset_y = random.randint(-20, 20)
 
             # 円の半径をランダムに決定
-            radius = random.randint(30, 40)
+            radius = random.randint(25, 40)
 
             # 中心からの相対位置ベクトルと半径を保存
             offset_vector = pygame.math.Vector2(offset_x, offset_y)

@@ -28,8 +28,8 @@ BOUNCINESS = 0.5 # 反発係数（0に近いほど跳ねない）
 # オーディオ設定
 BGM_VOLUME = 0.2 # BGMの音量 (0.0 ~ 1.0)
 BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ秒)
-BGM_NORMAL_PATH = "assets/audio/babelBGM2.ogg" # 通常BGMのパス
-BGM_BOSS_PATH = "assets/audio/babelBGM2.ogg" # ボス戦BGMのパス
+BGM_NORMAL_PATH = "assets/audio/.ogg" # 通常BGMのパス
+BGM_BOSS_PATH = "assets/audio/.ogg" # ボス戦BGMのパス
 SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
 SCALE_SOUND_PATHS = [
     "assets/audio/scale_c.ogg",
@@ -68,12 +68,12 @@ BIRD_POWER_UP_SCALE = 1.25 # 何かに当たるごとにボールが大きくな
 BIRD_HP_MULTIPLIER = 10 # 弾の半径1あたりのHP
 BIRD_ATTACK_POWER_MULTIPLIER = 7.5 # 弾の半径1あたりの攻撃力
 BIRD_MAX_RADIUS = 60 # パワーアップ時のボールの最大半径
-BIRD_POWER_UP_COOLDOWN = 300 # パワーアップのクールダウン時間 (ミリ秒)
+BIRD_POWER_UP_COOLDOWN = 500 # パワーアップのクールダウン時間 (ミリ秒)
 BIRD_RESET_MIN_VELOCITY_SQUARED = 2 # 弾がこの速度(の2乗)以下になったらリセットされる
 BIRD_STUCK_RESET_TIME = 500 # 弾が空中で停止したとみなしてリセットするまでの時間 (ミリ秒)
 BIRD_CALL_TIMEOUT = 2000 # 弾を呼び戻せるようになるまでの時間 (ミリ秒)
-GROUND_COLLISION_SAFE_TIME = 300 # 発射後に地面との衝突判定が有効になるまでの時間 (ミリ秒)
-TOWER_COLLISION_SAFE_TIME = 300 # 発射後に塔との衝突判定が有効になるまでの時間 (ミリ秒)
+GROUND_COLLISION_SAFE_TIME = 500 # 発射後に地面との衝突判定が有効になるまでの時間 (ミリ秒)
+TOWER_COLLISION_SAFE_TIME = 500 # 発射後に塔との衝突判定が有効になるまでの時間 (ミリ秒)
 
 # 弾の目の設定
 BIRD_EYE_OUTLINE_WIDTH = 2
@@ -139,20 +139,20 @@ GROUND_ANIMATION_MIN_SCALE = 0.95 # 衝突時に縮む最小スケール
 GROUND_ANIMATION_MIN_VELOCITY_Y = 5.0 # 地面のアニメーションが開始される最低垂直速度
 
 # 雲の設定
-CLOUD_BOUNCINESS = 1.1 # 雲の反発係数
+CLOUD_BOUNCINESS = 1.05 # 雲の反発係数
 
 # 雲のアニメーション設定
 CLOUD_ANIMATION_DURATION = 600 # 雲が元の大きさに戻るまでの時間 (ミリ秒)
 CLOUD_ANIMATION_MIN_SCALE = 0.8 # 衝突時に縮む最小スケール
 
 # 雲の生成設定
-CLOUD_MIN_COUNT = 4 # 生成される雲の最小数
-CLOUD_MAX_COUNT = 7 # 生成される雲の最大数
-CLOUD_MIN_DISTANCE_X = 300 # 生成される雲同士の最低距離 (X軸方向)
+CLOUD_MIN_COUNT = 5 # 生成される雲の最小数
+CLOUD_MAX_COUNT = 8 # 生成される雲の最大数
+CLOUD_MIN_DISTANCE_X = 200 # 生成される雲同士の最低距離 (X軸方向)
 CLOUD_MIN_DISTANCE_Y = 250 # 生成される雲同士の最低距離 (Y軸方向)
 CLOUD_SPAWN_PADDING_X = 100 # 画面の左右の端から雲が生成されるまでの最低距離
 CLOUD_SPAWN_Y_MIN = 100  # 雲が生成されるY座標の上限（画面上部）
-CLOUD_SPAWN_Y_MAX = 500 # 雲が生成されるY座標の下限（画面下部）
+CLOUD_SPAWN_Y_MAX = 450 # 雲が生成されるY座標の下限（画面下部）
 CLOUD_MIN_DISTANCE_FROM_TOWER = 300 # 塔から雲が生成されるまでの最低距離（円範囲）
 
 # 雲の浮遊アニメーション設定
@@ -266,8 +266,8 @@ GROUND_ENEMY_EYE_OFFSET_X_SCALE = -0.18 # 敵の中心からのXオフセット�
 GROUND_ENEMY_EYE_OFFSET_Y_SCALE = -0.05 # 敵の中心からのYオフセット比率
 
 # 飛行する敵の設定
-FLYING_ENEMY_MIN_Y = 100 # 飛行する敵が出現するY座標の最小値
-FLYING_ENEMY_MAX_Y = 350 # 飛行する敵が出現するY座標の最大値
+FLYING_ENEMY_MIN_Y = 50 # 飛行する敵が出現するY座標の最小値
+FLYING_ENEMY_MAX_Y = 450 # 飛行する敵が出現するY座標の最大値
 # FLYING_ENEMY_ATTACK_RANGE = 450 # 飛行する敵がタワーへの攻撃を開始する距離
 # 攻撃を開始するタワーからのX軸距離の範囲
 FLYING_ENEMY_ATTACK_RANGE_MAX = 450 # 最も遠い攻撃開始距離
@@ -287,18 +287,23 @@ FLYING_ENEMY_OUTLINE_WIDTH = 2 # 飛行する敵の枠線の太さ
 FLYING_ENEMY_EYE_SIZE_SCALE = 0.2 # 敵のサイズに対する目の半径の比率
 
 # ジャンパー（ジャンプする敵）の設定
-JUMPING_ENEMY_COLOR = YELLOW
+JUMPING_ENEMY_COLOR = GREEN # 緑色
 JUMPING_ENEMY_MIN_SIZE = 40
 JUMPING_ENEMY_MAX_SIZE = 120
-JUMPING_ENEMY_MIN_JUMP_FORCE = -18 # ジャンプ力の最小値（負の値で上方向）
-JUMPING_ENEMY_MAX_JUMP_FORCE = -25 # ジャンプ力の最大値
+JUMPING_ENEMY_MIN_JUMP_FORCE = -10 # ジャンプ力の最小値（負の値で上方向）
+JUMPING_ENEMY_MAX_JUMP_FORCE = -20 # ジャンプ力の最大値
 JUMPING_ENEMY_JUMP_COOLDOWN_MIN = 1000 # 次のジャンプまでの待機時間の最小値 (ms)
 JUMPING_ENEMY_JUMP_COOLDOWN_MAX = 3000 # 次のジャンプまでの待機時間の最大値 (ms)
 
 # ジャンパー専用のステータス倍率
-JUMPING_ENEMY_HP_MULTIPLIER = 1.8
-JUMPING_ENEMY_ATTACK_MULTIPLIER = 1.2
-JUMPING_ENEMY_SPEED_BASE = 150 # ジャンプ時の横方向の移動速度の基準値
+JUMPING_ENEMY_HP_MULTIPLIER = 3
+JUMPING_ENEMY_ATTACK_MULTIPLIER = 1.5
+JUMPING_ENEMY_SPEED_BASE = 80 # ジャンプ時の横方向の移動速度の基準値
+
+# ジャンパーの目の設定 (共通)
+JUMPING_ENEMY_EYE_SIZE_SCALE = 0.5 # 敵の幅に対する目の半径の比率
+JUMPING_ENEMY_EYE_OFFSET_X_SCALE = 0 # 敵の中心からのXオフセット比率
+JUMPING_ENEMY_EYE_OFFSET_Y_SCALE = 0 # 敵の中心からのYオフセット比率
 
 # 敵のアニメーション設定
 ENEMY_ANIMATION_DURATION = 300 # 敵が元の大きさに戻るまでの時間 (ミリ秒)

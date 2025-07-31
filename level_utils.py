@@ -10,7 +10,7 @@ def create_cloud_layout(slingshot_x, tower_top_y):
     # --- 雲の生成（重ならないように配置） ---
     clouds = []
     num_clouds = random.randint(config.CLOUD_MIN_COUNT, config.CLOUD_MAX_COUNT)
-    max_attempts = 100 # 無限ループを避けるための最大試行回数
+    max_attempts = 1000 # 無限ループを避けるための最大試行回数
     attempts = 0
 
     while len(clouds) < num_clouds and attempts < max_attempts:
