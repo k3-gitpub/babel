@@ -1,0 +1,164 @@
+import pygame
+import config
+import os
+
+class AudioManager:
+    """
+    BGMの再生、切り替え、停止を管理するクラス。
+    """
+    def __init__(self):
+        """AudioManagerを初期化する。"""
+        self.current_bgm_type = None
+        self.bgm_paths = {
+            "normal": config.BGM_NORMAL_PATH,
+            "boss": config.BGM_BOSS_PATH,
+        }
+        # BGMファイルが存在するかどうかを事前にチェック
+        self.music_loaded = {
+            "normal": os.path.exists(config.BGM_NORMAL_PATH),
+            "boss": os.path.exists(config.BGM_BOSS_PATH),
+        }
+        if not any(self.music_loaded.values()):
+            print("警告: BGMファイルが一つも見つかりません。BGMは再生されません。")
+        
+        # --- SEの初期化 ---
+        self.scale_sounds = []
+        sounds_found = 0
+        for path in config.SCALE_SOUND_PATHS:
+            if os.path.exists(path):
+                sound = pygame.mixer.Sound(path)
+                sound.set_volume(config.SE_VOLUME)
+                self.scale_sounds.append(sound)
+                sounds_found += 1
+            else:
+                print(f"警告: SEファイルが見つかりません: {path}")
+        
+        # 読み込めたSEが一つもなければ、リストを空にして警告を出す
+        if sounds_found == 0:
+            self.scale_sounds.clear() # 念のためクリア
+            print("音階SEは再生されません。")
+
+        # 敵死亡SEの読み込み
+        self.enemy_death_sound = None
+        if os.path.exists(config.SE_ENEMY_DEATH_PATH):
+            self.enemy_death_sound = pygame.mixer.Sound(config.SE_ENEMY_DEATH_PATH)
+            self.enemy_death_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_ENEMY_DEATH_PATH}")
+
+        # タワーダメージSEの読み込み
+        self.tower_damage_sound = None
+        if os.path.exists(config.SE_TOWER_DAMAGE_PATH):
+            self.tower_damage_sound = pygame.mixer.Sound(config.SE_TOWER_DAMAGE_PATH)
+            self.tower_damage_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_TOWER_DAMAGE_PATH}")
+
+        # ハート取得SEの読み込み
+        self.heart_collect_sound = None
+        if os.path.exists(config.SE_HEART_COLLECT_PATH):
+            self.heart_collect_sound = pygame.mixer.Sound(config.SE_HEART_COLLECT_PATH)
+            self.heart_collect_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_HEART_COLLECT_PATH}")
+
+        # ステージ開始SEの読み込み
+        self.stage_start_sound = None
+        if os.path.exists(config.SE_STAGE_START_PATH):
+            self.stage_start_sound = pygame.mixer.Sound(config.SE_STAGE_START_PATH)
+            self.stage_start_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_STAGE_START_PATH}")
+
+        # UIクリックSEの読み込み
+        self.ui_click_sound = None
+        if os.path.exists(config.SE_UI_CLICK_PATH):
+            self.ui_click_sound = pygame.mixer.Sound(config.SE_UI_CLICK_PATH)
+            self.ui_click_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_UI_CLICK_PATH}")
+
+        pygame.mixer.music.set_volume(config.BGM_VOLUME)
+        self.scale_index = 0
+
+    def _play_music(self, bgm_type: str):
+        """
+        指定されたタイプのBGMを再生する。
+        :param bgm_type: "normal" または "boss"
+        """
+        # すでに同じBGMが再生中、またはファイルが存在しない場合は何もしない
+        if self.current_bgm_type == bgm_type:
+            return
+        # 再生しようとしているBGMファイルが存在しない場合は、現在のBGMを止めずに処理を中断
+        if not self.music_loaded.get(bgm_type, False):
+            return
+
+        print(f"BGMを '{self.current_bgm_type}' から '{bgm_type}' に切り替えます。")
+        pygame.mixer.music.fadeout(config.BGM_FADEOUT_MS)
+        pygame.mixer.music.load(self.bgm_paths[bgm_type])
+        pygame.mixer.music.play(-1, fade_ms=1000) # -1でループ再生、1秒でフェードイン
+        self.current_bgm_type = bgm_type
+
+    def stop_music(self):
+        """BGMをフェードアウトしながら停止する。"""
+        if self.current_bgm_type is not None:
+            print("BGMを停止します。")
+            pygame.mixer.music.fadeout(config.BGM_FADEOUT_MS)
+            self.current_bgm_type = None
+
+    def play_scale_sound(self):
+        """現在の音階のSEを再生し、次の音階に進める。"""
+        if not self.scale_sounds:
+            return
+
+        # 現在のインデックスのサウンドを再生
+        sound_to_play = self.scale_sounds[self.scale_index]
+        sound_to_play.play()
+
+        # インデックスを次に進める (リストの範囲でループ)
+        self.scale_index = (self.scale_index + 1) % len(self.scale_sounds)
+
+    def play_enemy_death_sound(self):
+        """敵の死亡SEを再生する。"""
+        if self.enemy_death_sound:
+            self.enemy_death_sound.play()
+
+    def play_tower_damage_sound(self):
+        """タワーのダメージSEを再生する。"""
+        if self.tower_damage_sound:
+            self.tower_damage_sound.play()
+
+    def play_heart_collect_sound(self):
+        """ハート取得SEを再生する。"""
+        if self.heart_collect_sound:
+            self.heart_collect_sound.play()
+
+    def play_stage_start_sound(self):
+        """ステージ開始SEを再生する。"""
+        if self.stage_start_sound:
+            self.stage_start_sound.play()
+
+    def play_ui_click_sound(self):
+        """UIクリックSEを再生する。"""
+        if self.ui_click_sound:
+            self.ui_click_sound.play()
+
+    def reset_scale(self):
+        """音階を最初（ド）に戻す。"""
+        if self.scale_index != 0:
+            print("音階をリセットします。")
+            self.scale_index = 0
+
+    def update(self, game_state: str, is_boss_stage: bool):
+        """
+        ゲームの状態に応じてBGMを更新する。
+        :param game_state: 現在のゲーム状態 ("TITLE", "PLAYING"など)
+        :param is_boss_stage: 現在がボスステージかどうか
+        """
+        if game_state == "PLAYING":
+            if is_boss_stage:
+                self._play_music("boss")
+            else:
+                self._play_music("normal")
+        else: # TITLE, GAME_OVER, GAME_WONなどの状態
+            self.stop_music()

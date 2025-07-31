@@ -13,6 +13,16 @@ class ComboIndicator:
         self.combo_count = combo_count
         self.start_time = pygame.time.get_ticks()
 
+class ScoreIndicator:
+    """
+    画面に表示されるスコアテキストの情報を保持するデータクラス。
+    """
+    def __init__(self, position, text: str):
+        self.pos = position.copy()
+        self.start_y = position.y # アニメーションの開始Y座標
+        self.text = text
+        self.start_time = pygame.time.get_ticks()
+
 class UIManager:
     """
     ゲームのUI要素（テキスト、カウンター、メッセージなど）の描画を管理するクラス。
@@ -32,7 +42,9 @@ class UIManager:
         self.boss_font = boss_font
         self.combo_font = combo_font
         self.drag_font = pygame.font.Font(None, config.DRAG_TEXT_FONT_SIZE) # DRAG表示用のフォント
+        self.score_font = pygame.font.Font(None, config.SCORE_INDICATOR_FONT_SIZE) # スコアポップアップ用
         self.combo_indicators = [] # 表示中のコンボテキストを保持するリスト
+        self.score_indicators = [] # 表示中のスコアテキストを保持するリスト
 
     def add_combo_indicator(self, position, combo_count):
         """
@@ -45,6 +57,16 @@ class UIManager:
         self.combo_indicators.append(indicator)
         # 動作確認用のプリント
         print(f"UI: Added combo indicator for 'x{indicator.combo_count} COMBO!' at {indicator.pos}")
+
+    def add_score_indicator(self, position, score_value):
+        """
+        新しいスコア表示をリストに追加する。
+        :param position: 表示を開始する位置 (Vector2)
+        :param score_value: 表示するスコア値 (int)
+        """
+        text = f"+{score_value}"
+        indicator = ScoreIndicator(position, text)
+        self.score_indicators.append(indicator)
 
     def _draw_text(self, text, font, color, center_pos, outline_color=None, outline_width=0, alpha=None):
         """指定された位置に中央揃えでアウトライン付きテキストを描画する。アルファ（透明度）も指定可能。"""
@@ -128,7 +150,7 @@ class UIManager:
         hp_font = pygame.font.Font(None, 24)
         # self._draw_text(hp_text, hp_font, config.WHITE, bg_rect.center, config.BLACK, 1)
 
-    def draw_game_hud(self, tower, enemies_defeated_count, enemies_to_clear, current_stage, boss=None, boss_name=None):
+    def draw_game_hud(self, tower, enemies_defeated_count, enemies_to_clear, current_stage, max_combo_count, current_score, boss=None, boss_name=None):
         """
         ゲーム中のHUD（ヘッドアップディスプレイ）を描画する。
         これにはタワーのライフや討伐数カウンターが含まれる。
@@ -140,6 +162,29 @@ class UIManager:
             self.ui_font,
             config.WHITE,
             (150, 40), # 画面左上に表示
+            config.BLACK,
+            config.UI_COUNTER_OUTLINE_WIDTH
+        )
+
+        # --- 最大コンボ数を描画 ---
+        if max_combo_count > 0:
+            max_combo_text = f"MAX COMBO: {max_combo_count}"
+            self._draw_text(
+                max_combo_text,
+                self.boss_font, # ステージ番号より少し小さいフォント
+                config.YELLOW,
+                (config.SCREEN_WIDTH - 150, 80), # 画面右上に表示
+                config.BLACK,
+                config.UI_COUNTER_OUTLINE_WIDTH
+            )
+
+        # --- 現在のスコアを描画 ---
+        score_text = f"SCORE: {current_score}"
+        self._draw_text(
+            score_text,
+            self.boss_font, # MAX COMBOと同じフォントサイズ
+            config.WHITE,
+            (150, 80), # MAX COMBOの下に表示
             config.BLACK,
             config.UI_COUNTER_OUTLINE_WIDTH
         )
@@ -174,12 +219,12 @@ class UIManager:
                 (config.SCREEN_WIDTH - 100, 40), config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
 
-    def draw_end_screen(self, stage_state):
+    def draw_end_screen(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0):
         """
         ステージクリアまたはゲームオーバーの画面を描画する。
         :param stage_state: 現在のステージの状態 ("CLEARING", "GAME_OVER", "GAME_WON")
         """
-        if stage_state == "CLEARING":
+        if stage_state == "CLEARING": # ステージクリア時はメッセージのみ
             self._draw_text(
                 "STAGE CLEAR", 
                 self.title_font, 
@@ -188,26 +233,71 @@ class UIManager:
                 config.BLACK,
                 config.UI_TITLE_OUTLINE_WIDTH
             )
-        elif stage_state == "GAME_OVER":
+        elif stage_state in ["GAME_OVER", "GAME_WON"]:
+            # --- メインメッセージ (GAME OVER / GAME CLEAR) ---
+            if stage_state == "GAME_OVER":
+                message = "GAME OVER"
+                color = config.RED
+                restart_text = "Press 'R' to Restart"
+            else: # GAME_WON
+                message = "GAME CLEAR!"
+                color = config.AQUA
+                restart_text = "Press 'R' to Play Again"
+
             self._draw_text(
-                "GAME OVER", self.title_font, config.RED,
-                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2),
+                message, self.title_font, color,
+                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 - 150), # 少し上に表示
                 config.BLACK, config.UI_TITLE_OUTLINE_WIDTH
             )
+
+            # --- リザルト表示 ---
+            result_start_y = config.SCREEN_HEIGHT / 2 - 50
+            line_height = 50
+            
+            # スコア
             self._draw_text(
-                "Press 'R' to Restart", self.ui_font, config.WHITE,
-                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 + 80),
+                f"SCORE: {score}", self.ui_font, config.WHITE,
+                (config.SCREEN_WIDTH / 2, result_start_y),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
-        elif stage_state == "GAME_WON":
+
+            # ハイスコア
+            is_new_high_score = score > high_score
+            high_score_color = config.YELLOW if is_new_high_score else config.WHITE
+            high_score_text = f"HIGH SCORE: {high_score if not is_new_high_score else score}"
             self._draw_text(
-                "GAME CLEAR!", self.title_font, config.AQUA,
-                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2),
-                config.BLACK, config.UI_TITLE_OUTLINE_WIDTH
+                high_score_text, self.ui_font, high_score_color,
+                (config.SCREEN_WIDTH / 2, result_start_y + line_height),
+                config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
+            if is_new_high_score:
+                self._draw_text(
+                    "NEW RECORD!", self.boss_font, config.YELLOW,
+                    (config.SCREEN_WIDTH / 2 + 300, result_start_y + line_height),
+                    config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+                )
+
+            # 最大コンボ
             self._draw_text(
-                "Press 'R' to Play Again", self.ui_font, config.WHITE,
-                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 + 80),
+                f"MAX COMBO: {max_combo}", self.ui_font, config.WHITE,
+                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 2.5),
+                config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+            )
+
+            # ベストコンボ
+            is_new_best_combo = max_combo > best_combo
+            best_combo_color = config.YELLOW if is_new_best_combo else config.WHITE
+            best_combo_text = f"BEST COMBO: {best_combo if not is_new_best_combo else max_combo}"
+            self._draw_text(
+                best_combo_text, self.ui_font, best_combo_color,
+                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 3.5),
+                config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+            )
+
+            # --- リスタート案内 ---
+            self._draw_text(
+                restart_text, self.ui_font, config.WHITE,
+                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 5),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
 
@@ -319,9 +409,42 @@ class UIManager:
             if (current_time - indicator.start_time) <= config.COMBO_DURATION
         ]
 
+    def _draw_score_indicators(self):
+        """表示中のスコアテキストをアニメーション付きで描画し、古いものを削除する。"""
+        current_time = pygame.time.get_ticks()
+
+        # --- 描画処理 ---
+        for indicator in self.score_indicators:
+            elapsed_time = current_time - indicator.start_time
+            if elapsed_time > config.SCORE_INDICATOR_DURATION:
+                continue
+
+            # --- アニメーション計算 ---
+            progress = min(elapsed_time / config.SCORE_INDICATOR_DURATION, 1.0)
+            current_y = indicator.start_y - (config.SCORE_INDICATOR_MOVE_Y * progress)
+            alpha = 255 * (1.0 - progress)
+
+            # --- 描画 ---
+            self._draw_text(
+                indicator.text,
+                self.score_font,
+                config.SCORE_INDICATOR_COLOR,
+                (indicator.pos.x, current_y),
+                config.SCORE_INDICATOR_OUTLINE_COLOR,
+                config.SCORE_INDICATOR_OUTLINE_WIDTH,
+                alpha
+            )
+
+        # --- 削除処理 ---
+        self.score_indicators = [
+            indicator for indicator in self.score_indicators
+            if (current_time - indicator.start_time) <= config.SCORE_INDICATOR_DURATION
+        ]
+
     def draw_ui_overlays(self):
         """HUDや他のUI要素の上に描画されるべき要素（コンボ表示など）をまとめて描画する。"""
-        self._draw_combo_indicators()
+        self._draw_score_indicators() # 先にスコアを描画（奥に表示される）
+        self._draw_combo_indicators() # 後からコンボを描画（手前に表示される）
 
     def draw_blinking_text(self, text, center_pos, outline_color=None, outline_width=0):
         """

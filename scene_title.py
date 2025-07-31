@@ -12,12 +12,14 @@ class TitleScene:
     インタラクティブなタイトル画面を管理するクラス。
     プレイヤーはここで基本操作を試すことができる。
     """
-    def __init__(self, ui_manager):
+    def __init__(self, ui_manager, audio_manager):
         """
         TitleSceneを初期化する。
         :param ui_manager: UI描画に使用するUIManagerのインスタンス
+        :param audio_manager: 音声再生に使用するAudioManagerのインスタンス
         """
         self.ui_manager = ui_manager
+        self.audio_manager = audio_manager
         self.title_font = pygame.font.Font(None, 90) # タイトル用に少し小さめのフォント
         self.license_font = pygame.font.Font(None, 24) # ライセンス表示用のフォント
         self.info_font = pygame.font.Font(None, 36) # 操作説明用のフォント
@@ -95,12 +97,16 @@ class TitleScene:
         """
         # Enterキーでも開始可能
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            if self.audio_manager:
+                self.audio_manager.play_ui_click_sound()
             return "START_GAME"
         
         # --- マウス操作を追加 ---
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # スタートボタンがクリックされたか判定
             if self.start_button_rect.collidepoint(event.pos):
+                if self.audio_manager:
+                    self.audio_manager.play_ui_click_sound()
                 return "START_GAME"
             
             if self.bird.is_clicked(event.pos):

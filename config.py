@@ -25,6 +25,30 @@ LAUNCH_POWER_MULTIPLIER = 0.3
 FRICTION = 0.99 # 摩擦係数（1に近いほど滑る）
 BOUNCINESS = 0.5 # 反発係数（0に近いほど跳ねない）
 
+# オーディオ設定
+BGM_VOLUME = 0.2 # BGMの音量 (0.0 ~ 1.0)
+BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ秒)
+BGM_NORMAL_PATH = "assets/audio/babelBGM2.ogg" # 通常BGMのパス
+BGM_BOSS_PATH = "assets/audio/babelBGM2.ogg" # ボス戦BGMのパス
+SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
+SCALE_SOUND_PATHS = [
+    "assets/audio/scale_c.ogg",
+    "assets/audio/scale_d.ogg",
+    "assets/audio/scale_e.ogg",
+    "assets/audio/scale_f.ogg",
+    "assets/audio/scale_g.ogg",
+    "assets/audio/scale_a.ogg",
+    "assets/audio/scale_b.ogg",
+    "assets/audio/scale_c2.ogg", # 高いド
+    "assets/audio/scale_d2.ogg", # 高いレ
+    "assets/audio/scale_e2.ogg", # 高いミ
+]
+SE_ENEMY_DEATH_PATH = "assets/audio/enemy_death2.ogg" # 敵の死亡SE
+SE_TOWER_DAMAGE_PATH = "assets/audio/tower_damage.ogg" # タワーの被ダメージSE
+SE_HEART_COLLECT_PATH = "assets/audio/heart_collect.ogg" # ハート取得SE
+SE_STAGE_START_PATH = "assets/audio/.ogg" # ステージ開始SE
+SE_UI_CLICK_PATH = "assets/audio/select.ogg" # UIクリックSE
+
 # タイトル画面設定
 TITLE_ENEMY_SPAWN_INTERVAL = 8000 # にぎやかしの敵が出現する間隔 (ms)
 TITLE_ENEMY_MAX_COUNT = 20         # にぎやかしの敵の最大数
@@ -42,12 +66,12 @@ SLINGSHOT_POST_COLOR = WOOD
 
 BIRD_POWER_UP_SCALE = 1.25 # 何かに当たるごとにボールが大きくなる倍率
 BIRD_HP_MULTIPLIER = 10 # 弾の半径1あたりのHP
-BIRD_ATTACK_POWER_MULTIPLIER = 5 # 弾の半径1あたりの攻撃力
-BIRD_MAX_RADIUS = 100 # パワーアップ時のボールの最大半径
-BIRD_POWER_UP_COOLDOWN = 200 # パワーアップのクールダウン時間 (ミリ秒)
-BIRD_RESET_MIN_VELOCITY_SQUARED = 1 # 弾がこの速度(の2乗)以下になったらリセットされる
+BIRD_ATTACK_POWER_MULTIPLIER = 7.5 # 弾の半径1あたりの攻撃力
+BIRD_MAX_RADIUS = 60 # パワーアップ時のボールの最大半径
+BIRD_POWER_UP_COOLDOWN = 300 # パワーアップのクールダウン時間 (ミリ秒)
+BIRD_RESET_MIN_VELOCITY_SQUARED = 2 # 弾がこの速度(の2乗)以下になったらリセットされる
 BIRD_STUCK_RESET_TIME = 500 # 弾が空中で停止したとみなしてリセットするまでの時間 (ミリ秒)
-BIRD_CALL_TIMEOUT = 3000 # 弾を呼び戻せるようになるまでの時間 (ミリ秒)
+BIRD_CALL_TIMEOUT = 2000 # 弾を呼び戻せるようになるまでの時間 (ミリ秒)
 GROUND_COLLISION_SAFE_TIME = 300 # 発射後に地面との衝突判定が有効になるまでの時間 (ミリ秒)
 TOWER_COLLISION_SAFE_TIME = 300 # 発射後に塔との衝突判定が有効になるまでの時間 (ミリ秒)
 
@@ -79,8 +103,8 @@ SLINGSHOT_X = 180 # スリングショットのX座標。タワーの位置の�
 TOWER_BLOCK_WIDTH = 40
 TOWER_BLOCK_HEIGHT = 40
 TOWER_INITIAL_BLOCKS = 3 # タワーの初期ブロック数
-TOWER_CONTACT_DAMAGE = 25 # タワーが接触時に敵に与えるダメージ
-TOWER_KNOCKBACK_FORCE = 15 # タワーが敵に衝突した際に与えるノックバック（押し返す力）の基本強度
+TOWER_CONTACT_DAMAGE = 40 # タワーが接触時に敵に与えるダメージ
+TOWER_KNOCKBACK_FORCE = 20 # タワーが敵に衝突した際に与えるノックバック（押し返す力）の基本強度
 BOSS_TOWER_CONTACT_KNOCKBACK_FORCE = 30 # ボスがタワーに衝突した際のノックバック力
 TOWER_BOUNCINESS = 1.2 # 塔の反発係数
 
@@ -122,11 +146,14 @@ CLOUD_ANIMATION_DURATION = 600 # 雲が元の大きさに戻るまでの時間 (
 CLOUD_ANIMATION_MIN_SCALE = 0.8 # 衝突時に縮む最小スケール
 
 # 雲の生成設定
-CLOUD_MIN_DISTANCE = 250 # 生成される雲同士の最低距離
+CLOUD_MIN_COUNT = 4 # 生成される雲の最小数
+CLOUD_MAX_COUNT = 7 # 生成される雲の最大数
+CLOUD_MIN_DISTANCE_X = 300 # 生成される雲同士の最低距離 (X軸方向)
+CLOUD_MIN_DISTANCE_Y = 250 # 生成される雲同士の最低距離 (Y軸方向)
 CLOUD_SPAWN_PADDING_X = 100 # 画面の左右の端から雲が生成されるまでの最低距離
-CLOUD_SPAWN_PADDING_Y = 100 # 画面の上の端から雲が生成されるまでの最低距離
-CLOUD_SPAWN_Y_MAX = 450 # 雲が生成されるY座標の下限
-CLOUD_MIN_DISTANCE_FROM_TOWER = 200 # 塔から雲が生成されるまでの最低距離（円範囲）
+CLOUD_SPAWN_Y_MIN = 100  # 雲が生成されるY座標の上限（画面上部）
+CLOUD_SPAWN_Y_MAX = 500 # 雲が生成されるY座標の下限（画面下部）
+CLOUD_MIN_DISTANCE_FROM_TOWER = 300 # 塔から雲が生成されるまでの最低距離（円範囲）
 
 # 雲の浮遊アニメーション設定
 CLOUD_FLOAT_SPEED = 0.01 # ふわふわ動く速さ
@@ -144,16 +171,25 @@ DRAG_PROMPT_DELAY = 2000 # 入力がない場合にDRAG表示を再表示する�
 
 # コンボ表示設定
 COMBO_DURATION = 1000 # コンボ表示の持続時間 (ms)
-COMBO_MOVE_Y = 100 # コンボ表示が上に移動する距離 (pixels)
+COMBO_MOVE_Y = 160 # コンボ表示が上に移動する距離 (pixels)
 COMBO_START_COLOR = (255, 255, 0) # テキストの初期色 (黄色)
 COMBO_END_COLOR = (255, 165, 0) # テキストの終末色 (オレンジ)
 COMBO_OUTLINE_COLOR = (0, 0, 0)
 COMBO_OUTLINE_WIDTH = 2
-COMBO_TEXT_FONT_SIZE = 48 # "x" と "COMBO!" の文字サイズ
-COMBO_NUMBER_BASE_FONT_SIZE = 64 # コンボ数の基本サイズ
+COMBO_TEXT_FONT_SIZE = 36 # "x" と "COMBO!" の文字サイズ
+COMBO_NUMBER_BASE_FONT_SIZE = 48 # コンボ数の基本サイズ
 COMBO_MIN_TO_SHOW = 2 # 表示を開始する最低コンボ数
 COMBO_NUMBER_SCALE_FACTOR = 1.5 # コンボ数1あたりのフォントサイズ増加率
 COMBO_NUMBER_MAX_ADDITIONAL_SIZE = 100 # フォントサイズの最大増加量
+
+# スコアポップアップ表示設定
+SCORE_INDICATOR_DURATION = 800 # 表示の持続時間 (ms)
+SCORE_INDICATOR_MOVE_Y = 80 # 上に移動する距離 (pixels)
+SCORE_INDICATOR_COLOR = (255, 100, 100) # テキストの色 (薄い黄色)
+SCORE_INDICATOR_FONT_SIZE = 64
+SCORE_INDICATOR_OUTLINE_COLOR = BLACK
+SCORE_INDICATOR_OUTLINE_WIDTH = 2
+
 
 # ボス戦UI設定
 BOSS_UI_TITLE_COLOR = (255, 87, 34) # ボスタイトルの色 (Deep Orange)
@@ -205,7 +241,6 @@ STAGE_CLEAR_WAIT_TIME = 2500 # ステージクリア表示から次のステー�
 
 # 敵の設定
 ENEMY_SPAWN_INTERVAL = 5000 # 敵が出現する間隔 (ミリ秒)
-ENEMIES_TO_CLEAR_STAGE = 5 # ステージクリアに必要な討伐数
 FIRST_ENEMY_SPAWN_DELAY = 500 # 最初の敵が出現するまでの時間 (ミリ秒)
 ENEMY_SPAWN_OFFSET_X = 20 # 画面右端からどれだけ離れて出現するか
 ENEMY_MIN_SIZE = 40 # 敵の最小サイズ
@@ -213,8 +248,8 @@ ENEMY_MAX_SIZE = 120 # 敵の最大サイズ
 ENEMY_HP_MULTIPLIER = 2 # サイズに対するHPの倍率
 ENEMY_SPEED_BASE = 60 # 敵の基本速度（この値をサイズで割る）
 ENEMY_MIN_SPEED = 0.1 # 敵の最低移動速度
-ENEMY_ATTACK_MULTIPLIER = 2 # サイズに対する攻撃力の倍率
-ENEMY_BOUNCINESS = 0.6 # 敵に当たった時の弾の反発係数
+ENEMY_ATTACK_MULTIPLIER = 1.5 # サイズに対する攻撃力の倍率
+ENEMY_BOUNCINESS = 0.75 # 敵に当たった時の弾の反発係数
 ENEMY_KNOCKBACK_FORCE = 1.0 # 敵が受けるノックバックの基本強度
 ENEMY_KNOCKBACK_ATTACK_POWER_SCALE = 0.1 # ノックバックの力に対する弾の攻撃力の影響係数
 ENEMY_FRICTION = 0.9 # ノックバックされた敵の減速係数
@@ -235,7 +270,7 @@ FLYING_ENEMY_MIN_Y = 100 # 飛行する敵が出現するY座標の最小値
 FLYING_ENEMY_MAX_Y = 350 # 飛行する敵が出現するY座標の最大値
 # FLYING_ENEMY_ATTACK_RANGE = 450 # 飛行する敵がタワーへの攻撃を開始する距離
 # 攻撃を開始するタワーからのX軸距離の範囲
-FLYING_ENEMY_ATTACK_RANGE_MAX = 500 # 最も遠い攻撃開始距離
+FLYING_ENEMY_ATTACK_RANGE_MAX = 450 # 最も遠い攻撃開始距離
 FLYING_ENEMY_ATTACK_RANGE_MIN = -150 # 最も近い攻撃開始距離（負の値でタワーを通り過ぎてから攻撃）
 # 攻撃時のターゲットY座標オフセットの範囲（タワーのてっぺんを基準とする）
 FLYING_ENEMY_TARGET_Y_MIN = -80 # 最小オフセット（負の値でタワーの上方を狙う）
@@ -250,6 +285,20 @@ FLYING_ENEMY_ATTACK_MULTIPLIER = 1.5
 FLYING_ENEMY_COLOR = (156, 39, 176) # 紫色
 FLYING_ENEMY_OUTLINE_WIDTH = 2 # 飛行する敵の枠線の太さ
 FLYING_ENEMY_EYE_SIZE_SCALE = 0.2 # 敵のサイズに対する目の半径の比率
+
+# ジャンパー（ジャンプする敵）の設定
+JUMPING_ENEMY_COLOR = YELLOW
+JUMPING_ENEMY_MIN_SIZE = 40
+JUMPING_ENEMY_MAX_SIZE = 120
+JUMPING_ENEMY_MIN_JUMP_FORCE = -18 # ジャンプ力の最小値（負の値で上方向）
+JUMPING_ENEMY_MAX_JUMP_FORCE = -25 # ジャンプ力の最大値
+JUMPING_ENEMY_JUMP_COOLDOWN_MIN = 1000 # 次のジャンプまでの待機時間の最小値 (ms)
+JUMPING_ENEMY_JUMP_COOLDOWN_MAX = 3000 # 次のジャンプまでの待機時間の最大値 (ms)
+
+# ジャンパー専用のステータス倍率
+JUMPING_ENEMY_HP_MULTIPLIER = 1.8
+JUMPING_ENEMY_ATTACK_MULTIPLIER = 1.2
+JUMPING_ENEMY_SPEED_BASE = 150 # ジャンプ時の横方向の移動速度の基準値
 
 # 敵のアニメーション設定
 ENEMY_ANIMATION_DURATION = 300 # 敵が元の大きさに戻るまでの時間 (ミリ秒)

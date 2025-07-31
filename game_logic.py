@@ -3,6 +3,7 @@ import random
 import config
 from enemy import Enemy
 from flying_enemy import FlyingEnemy
+from jumping_enemy import JumpingEnemy
 from heart_item import HeartItem
 from particle import Particle
 from stage_manager import StageManager
@@ -37,7 +38,7 @@ class GameLogicManager:
     """
     ゲームのロジック（衝突判定、エンティティ生成、状態遷移など）を管理するクラス。
     """
-    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, particles, slingshot_pos, ui_manager):
+    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, particles, slingshot_pos, ui_manager, audio_manager, play_start_sound=True):
         # ゲームオブジェクトへの参照を保持
         self.bird = bird
         self.tower = tower
@@ -48,12 +49,19 @@ class GameLogicManager:
         self.particles = particles
         self.slingshot_pos = slingshot_pos
         self.ui_manager = ui_manager
+        self.audio_manager = audio_manager
 
         # ステージ管理クラスを初期化
         self.stage_manager = StageManager()
 
+        # ゲーム全体を通しての最大コンボ数を記録
+        self.max_combo_count = 0
+
+        # 現在のプレイのスコアを記録
+        self.current_score = 0
+
         # ゲームの状態とタイマーを初期化
-        self.reset_level_state()
+        self.reset_level_state(play_sound=play_start_sound)
 
         # ボスが出現したかどうかを追跡するフラグ
         self.boss_spawned = False
@@ -85,11 +93,15 @@ class GameLogicManager:
 
         self._cleanup_entities()
 
-    def reset_level_state(self):
+    def reset_level_state(self, play_sound=True):
         """ゲームの状態を現在のステージ開始時にリセットする。"""
         self.stage_state = "PLAYING"
         self.enemies_defeated_count = 0
         self.boss_spawned = False
+
+        # ステージ開始SEを再生
+        if play_sound and self.audio_manager:
+            self.audio_manager.play_stage_start_sound()
 
         # 現在のステージ設定に基づいてタイマーをリセット
         settings = self.stage_manager.get_current_stage_settings()
@@ -182,6 +194,9 @@ class GameLogicManager:
             elif chosen_enemy_type == "ground":
                 self.enemies.append(Enemy(stat_multiplier))
                 print("地上の敵が出現！")
+            elif chosen_enemy_type == "jumping":
+                self.enemies.append(JumpingEnemy(stat_multiplier))
+                print("ジャンプする敵が出現！")
 
     def _handle_collisions(self):
         """全ての衝突判定を処理する。"""
@@ -210,6 +225,7 @@ class GameLogicManager:
                         # --- 共通の衝突エフェクト ---
                         collision_point = (pygame.math.Vector2(enemy.rect.center) + pygame.math.Vector2(block.rect.center)) / 2
                         self._spawn_particles(collision_point, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_TOWER)
+                        if self.audio_manager: self.audio_manager.play_tower_damage_sound()
                         print(f"敵がタワーに衝突！")
 
                         # --- ダメージ処理 ---
@@ -220,6 +236,7 @@ class GameLogicManager:
                         if not is_weak_point_hit_by_tower:
                             is_enemy_defeated = enemy.take_damage(config.TOWER_CONTACT_DAMAGE)
                             if is_enemy_defeated and not isinstance(enemy, BossEnemy):
+                                if self.audio_manager: self.audio_manager.play_enemy_death_sound()
                                 self.enemies_defeated_count += 1
                         else:
                             print("タワーがボスの弱点に接触したが、ダメージは無効化された。")
@@ -245,7 +262,15 @@ class GameLogicManager:
         for cloud in self.clouds:
             collided_puff_info = cloud.collide_with_bird(self.bird)
             if collided_puff_info:
-                print("雲に衝突！")
+                # --- コンボ処理 ---
+                new_combo_count = self.bird.increment_combo()
+                self.max_combo_count = max(self.max_combo_count, new_combo_count)
+                print(f"雲に衝突！ COMBO x{new_combo_count}")
+                # --- UI表示の呼び出し ---
+                if new_combo_count >= config.COMBO_MIN_TO_SHOW:
+                    self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+
+                if self.audio_manager: self.audio_manager.play_scale_sound()
                 self.bird.bounce_off_cloud(collided_puff_info)
                 self.bird.power_up()
                 cloud.start_animation()
@@ -257,10 +282,18 @@ class GameLogicManager:
             if time_since_launch > config.TOWER_COLLISION_SAFE_TIME:
                 for block in self.tower.blocks:
                     if self.bird.collide_and_bounce_off_rect(block, config.TOWER_BOUNCINESS):
+                        # --- コンボ処理 ---
+                        new_combo_count = self.bird.increment_combo()
+                        self.max_combo_count = max(self.max_combo_count, new_combo_count)
+                        print(f"塔に衝突！ COMBO x{new_combo_count}")
+                        # --- UI表示の呼び出し ---
+                        if new_combo_count >= config.COMBO_MIN_TO_SHOW:
+                            self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+
+                        if self.audio_manager: self.audio_manager.play_scale_sound()
                         self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_TOWER)
                         self.bird.power_up()
                         block.start_animation()
-                        print("塔に衝突！")
                         break
 
     def _handle_bird_heart_collision(self):
@@ -269,6 +302,7 @@ class GameLogicManager:
             if heart.collide_with_bird(self.bird):
                 print("ハートアイテムを獲得！")
                 if self.tower.repair_one_block():
+                    if self.audio_manager: self.audio_manager.play_heart_collect_sound()
                     self._spawn_particles(heart.pos, config.PARTICLE_COUNT_ON_HEART_COLLECT, config.PARTICLE_LIFETIME, config.PARTICLE_MIN_SPEED, config.PARTICLE_MAX_SPEED, config.PARTICLE_GRAVITY, config.PARTICLE_START_SIZE, config.PARTICLE_END_SIZE, config.PARTICLE_COLORS)
                     del self.heart_items[i]
                     self.bird.power_up()
@@ -281,13 +315,17 @@ class GameLogicManager:
                 # 1. アクティブな弱点との衝突判定を先に試みる
                 hit_weak_point = False
                 for wp in enemy.weak_points:
+                    # 弱点にヒット
                     if wp.is_active and self.bird.collide_and_bounce_off_rect(wp, config.ENEMY_BOUNCINESS):
                         # --- コンボ処理 ---
                         new_combo_count = self.bird.increment_combo()
+                        self.max_combo_count = max(self.max_combo_count, new_combo_count)
                         print(f"ボスの弱点に命中！ COMBO x{new_combo_count}")
                         # --- UI表示の呼び出し ---
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                        # 弱点ヒット時に敵死亡SEを再生する
+                        if self.audio_manager: self.audio_manager.play_enemy_death_sound()
                         self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_WEAK_POINT)
 
                         enemy.start_animation() # ボスをひるませる
@@ -303,15 +341,19 @@ class GameLogicManager:
                         enemy.force_switch_weak_point()
 
                         if is_enemy_defeated:
+                            self._calculate_and_add_score(enemy.rect.center)
                             print("ボスを撃破した！")
+                            # 音は弱点ヒット時に再生されるため、ここでは不要
                         hit_weak_point = True
                         break # 弱点ループを抜ける
                 if hit_weak_point:
                     break # 敵ループも抜ける
 
                 # 2. 弱点にヒットしなかった場合、ボス本体との衝突判定を行う
+                # ボス本体にヒット
                 if self.bird.collide_and_bounce_off_rect(enemy, config.BOSS_BODY_BOUNCINESS):
                     print("ボスの本体に命中！(ダメージなし)")
+                    if self.audio_manager: self.audio_manager.play_scale_sound()
                     # ダメージ無しのヒットエフェクトを出す
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_BOSS_BODY)
                     # ここではボスへのダメージ、ノックバック、バードのパワーアップは行わない
@@ -319,13 +361,16 @@ class GameLogicManager:
             
             # --- 通常の敵との衝突判定 ---
             else:
+                # 通常の敵にヒット
                 if self.bird.collide_and_bounce_off_rect(enemy, config.ENEMY_BOUNCINESS):
                     # --- コンボ処理 ---
                     new_combo_count = self.bird.increment_combo()
+                    self.max_combo_count = max(self.max_combo_count, new_combo_count)
                     print(f"敵に衝突！ COMBO x{new_combo_count}")
                     # --- UI表示の呼び出し ---
                     if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                         self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                    if self.audio_manager: self.audio_manager.play_scale_sound()
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_ENEMY)
 
                     enemy.start_animation()
@@ -338,8 +383,13 @@ class GameLogicManager:
                     direction.normalize_ip()
                     force = config.ENEMY_KNOCKBACK_FORCE + (self.bird.attack_power * config.ENEMY_KNOCKBACK_ATTACK_POWER_SCALE)
                     enemy.knockback(direction, force)
-                    if is_enemy_defeated: self.enemies_defeated_count += 1
-                    if is_bird_defeated: self.bird.reset(self.slingshot_pos)
+                    if is_enemy_defeated:
+                        self._calculate_and_add_score(enemy.rect.center)
+                        if self.audio_manager: self.audio_manager.play_enemy_death_sound()
+                        self.enemies_defeated_count += 1
+                    if is_bird_defeated:
+                        if self.audio_manager: self.audio_manager.reset_scale()
+                        self.bird.reset(self.slingshot_pos)
                     break # 敵ループを抜ける
 
     def _handle_bird_ground_collision(self):
@@ -368,6 +418,7 @@ class GameLogicManager:
         is_off_screen = (self.bird.pos.x < -self.bird.radius or
                          self.bird.pos.x > config.SCREEN_WIDTH + self.bird.radius)
         if is_off_screen:
+            if self.audio_manager: self.audio_manager.reset_scale()
             self.bird.reset(self.slingshot_pos)
             return
 
@@ -378,6 +429,7 @@ class GameLogicManager:
         if is_slow:
             # 1. 地面で低速になった場合は即時リセット
             if is_on_ground:
+                if self.audio_manager: self.audio_manager.reset_scale()
                 self.bird.reset(self.slingshot_pos)
                 return
 
@@ -389,6 +441,7 @@ class GameLogicManager:
             # 低速状態が一定時間続いたらリセット
             if pygame.time.get_ticks() - self.bird.low_velocity_start_time > config.BIRD_STUCK_RESET_TIME:
                 print("Bird seems to be stuck. Resetting.")
+                if self.audio_manager: self.audio_manager.reset_scale()
                 self.bird.reset(self.slingshot_pos)
         else:
             # 速度が十分ある場合はタイマーをリセット
@@ -433,6 +486,7 @@ class GameLogicManager:
         self.particles.clear()
 
         # バードをリセット
+        if self.audio_manager: self.audio_manager.reset_scale()
         self.bird.reset(self.slingshot_pos)
 
     def _generate_new_clouds(self):
@@ -477,6 +531,43 @@ class GameLogicManager:
                 colors
             ))
 
+    def _calculate_and_add_score(self, enemy_pos):
+        """
+        敵を倒した際のスコアを計算し、加算する。
+        パターンD（ハイブリッド方式）を採用。
+        """
+        # --- スコア計算 ---
+        combo_count = self.bird.combo_count
+
+        # 基本点
+        score_to_add = 100
+        
+        # コンボボーナス
+        linear_bonus = 0
+        tiered_bonus = 0
+        if combo_count >= 2:
+            # 線形ボーナス: (コンボ数 - 1) * 20点
+            linear_bonus = (combo_count - 1) * 20
+            
+            # 段階ボーナス
+            if 5 <= combo_count <= 9:
+                tiered_bonus = 100
+            elif 10 <= combo_count <= 19:
+                tiered_bonus = 300
+            elif combo_count >= 20:
+                tiered_bonus = 1000
+        
+        total_bonus = linear_bonus + tiered_bonus
+        score_to_add += total_bonus
+        
+        # --- スコア加算とUIへの通知 ---
+        self.current_score += score_to_add
+        print(f"敵を撃破！ +{score_to_add}点 (コンボボーナス: +{total_bonus}点) -> 合計スコア: {self.current_score}")
+
+        # UIにスコア表示を依頼
+        if score_to_add > 0:
+            self.ui_manager.add_score_indicator(pygame.math.Vector2(enemy_pos), score_to_add)
+
     @property
     def current_boss(self):
         """現在のボスインスタンスが存在すればそれを、なければNoneを返す。"""
@@ -497,6 +588,7 @@ class GameLogicManager:
             self.enemies.clear()
             self.heart_items.clear()
             self.particles.clear()
+            if self.audio_manager: self.audio_manager.reset_scale()
             self.bird.reset(self.slingshot_pos)
             
             # ステージクリア待機タイマーが存在すれば削除
