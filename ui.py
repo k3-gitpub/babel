@@ -130,11 +130,73 @@ class HUD:
         self.screen = screen
         self.ui_font = ui_font
         self.boss_font = boss_font
+        self.gauge_font = pygame.font.Font(None, config.COMBO_GAUGE_TEXT_BASE_FONT_SIZE) # ゲージ用フォント
+        # ゲージ満タンエフェクト用の状態変数
+        self.is_gauge_flashing = False
+        self.gauge_flash_start_time = 0
 
-    def draw(self, tower, current_stage, max_combo_count, current_score):
+
+    def draw(self, tower, current_stage, max_combo_count, current_score, combo_gauge, combo_gauge_max):
         """
         ゲーム中の共通HUD（ステージ、スコア、コンボ、ライフ）を描画する。
         """
+        # --- コンボゲージの描画 ---
+        if combo_gauge_max > 0:
+            current_time = pygame.time.get_ticks()
+            # エフェクト中もゲージの地の色は通常色で初期化
+            foreground_color = config.COMBO_GAUGE_COLOR
+            flash_progress = 0 # エフェクトの進行度 (0.0 ~ 1.0)
+
+            # --- フラッシュエフェクトの処理 ---
+            if self.is_gauge_flashing:
+                elapsed_time = current_time - self.gauge_flash_start_time
+                if elapsed_time < config.COMBO_GAUGE_FLASH_DURATION:
+                    # サイン波を使って滑らかに点滅させる (0 -> 1 -> 0)
+                    flash_progress = math.sin((elapsed_time / config.COMBO_GAUGE_FLASH_DURATION) * math.pi)
+                    # 色を線形補間
+                    r = int(config.COMBO_GAUGE_COLOR[0] + (config.COMBO_GAUGE_FLASH_COLOR[0] - config.COMBO_GAUGE_COLOR[0]) * flash_progress)
+                    g = int(config.COMBO_GAUGE_COLOR[1] + (config.COMBO_GAUGE_FLASH_COLOR[1] - config.COMBO_GAUGE_COLOR[1]) * flash_progress)
+                    b = int(config.COMBO_GAUGE_COLOR[2] + (config.COMBO_GAUGE_FLASH_COLOR[2] - config.COMBO_GAUGE_COLOR[2]) * flash_progress)
+                    foreground_color = (r, g, b)
+                else:
+                    self.is_gauge_flashing = False # エフェクト終了
+
+            # 背景
+            bg_rect = pygame.Rect(0, 0, config.COMBO_GAUGE_WIDTH, config.COMBO_GAUGE_HEIGHT)
+            bg_rect.center = (config.COMBO_GAUGE_X, config.COMBO_GAUGE_Y)
+            pygame.draw.rect(self.screen, config.COMBO_GAUGE_BG_COLOR, bg_rect, border_radius=5)
+
+            # 前景（溜まっているゲージ）
+            gauge_ratio = min(combo_gauge / combo_gauge_max, 1.0)
+            # フラッシュ中はゲージを満タンで表示する
+            if self.is_gauge_flashing:
+                gauge_ratio = 1.0
+
+            fg_width = bg_rect.width * gauge_ratio
+            if fg_width > 0:
+                fg_rect = pygame.Rect(bg_rect.left, bg_rect.top, fg_width, bg_rect.height)
+                pygame.draw.rect(self.screen, foreground_color, fg_rect, border_radius=5)
+
+            # 枠線
+            pygame.draw.rect(self.screen, config.COMBO_GAUGE_OUTLINE_COLOR, bg_rect, config.COMBO_GAUGE_OUTLINE_WIDTH, border_radius=5)
+
+            # --- "COMBO" テキストを描画 ---
+            # エフェクト中はフォントサイズを動的に変更
+            current_gauge_font = self.gauge_font
+            if self.is_gauge_flashing and flash_progress > 0:
+                additional_size = int(config.COMBO_GAUGE_TEXT_PULSE_ADDITIONAL_SIZE * flash_progress)
+                current_font_size = config.COMBO_GAUGE_TEXT_BASE_FONT_SIZE + additional_size
+                current_gauge_font = pygame.font.Font(None, current_font_size)
+
+            draw_text(
+                self.screen,
+                "COMBO",
+                current_gauge_font,
+                config.WHITE,
+                (bg_rect.centerx, bg_rect.centery), # ゲージの中央に配置
+                config.BLACK, 1
+            )
+
         # --- 現在のステージ番号を描画 ---
         stage_text = f"STAGE {current_stage}"
         draw_text(
@@ -272,7 +334,6 @@ class UIManager:
     def add_combo_indicator(self, position, combo_count):
         """
         新しいコンボ表示をリストに追加する。
-        ステップ5でGameLogicManagerから呼び出される。
         :param position: 表示を開始する位置 (Vector2)
         :param combo_count: 表示するコンボ数 (int)
         """
@@ -291,17 +352,23 @@ class UIManager:
         indicator = ScoreIndicator(position, text)
         self.score_indicators.append(indicator)
 
+    def start_gauge_flash_effect(self):
+        """ゲージ満タンのフラッシュエフェクトを開始する。"""
+        if not self.hud.is_gauge_flashing:
+            self.hud.is_gauge_flashing = True
+            self.hud.gauge_flash_start_time = pygame.time.get_ticks()
+
     def draw_boss_hud(self, boss, boss_name):
         """ボス戦専用のHUDを描画する。内部でBossHUDクラスのdrawを呼び出す。"""
         self.boss_hud.draw(boss, boss_name)
 
-    def draw_game_hud(self, tower, enemies_defeated_count, enemies_to_clear, current_stage, max_combo_count, current_score, boss=None, boss_name=None):
+    def draw_game_hud(self, tower, enemies_defeated_count, enemies_to_clear, current_stage, max_combo_count, current_score, combo_gauge, combo_gauge_max, boss=None, boss_name=None):
         """
         ゲーム中のHUD（ヘッドアップディスプレイ）を描画する。
         共通HUDを描画し、状況に応じて通常カウンターかボスHUDを描画する。
         """
         # 1. 共通のHUD要素（スコア、ライフなど）をHUDクラスに描画させる
-        self.hud.draw(tower, current_stage, max_combo_count, current_score)
+        self.hud.draw(tower, current_stage, max_combo_count, current_score, combo_gauge, combo_gauge_max)
 
         # 2. ボス戦かどうかで、描画するUIを切り替える
         if boss and boss_name:
@@ -316,12 +383,12 @@ class UIManager:
                 (config.SCREEN_WIDTH - 100, 40), config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
 
-    def draw_end_screen(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, mouse_pos=(0,0)):
+    def draw_end_screen(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, tower_height=0, tower_bonus=0, best_tower_height=0, mouse_pos=(0,0)):
         """
         ステージクリアまたはゲームオーバーの画面を描画する。
         内部でEndScreenクラスのdrawを呼び出す。
         """
-        self.end_screen.draw(stage_state, score, high_score, max_combo, best_combo, mouse_pos)
+        self.end_screen.draw(stage_state, score, high_score, max_combo, best_combo, tower_height, tower_bonus, best_tower_height, mouse_pos)
 
     def draw_recall_button(self, position):
         """

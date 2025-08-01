@@ -2,7 +2,7 @@
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FPS = 60
-DEBUG = False # デバッグモードのフラグ。リリース時にはFalseに設定
+DEBUG = True # デバッグモードのフラグ。リリース時にはFalseに設定
 DEBUG_START_STAGE = 1 # デバッグモード時に開始するステージ番号
 
 # 色の定義
@@ -31,6 +31,12 @@ BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ�
 BGM_NORMAL_PATH = "assets/audio/.ogg" # 通常BGMのパス
 BGM_BOSS_PATH = "assets/audio/.ogg" # ボス戦BGMのパス
 SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
+
+# コンボヒット音の設定
+USE_SCALE_SOUND_FOR_COMBO = False # True: ドレミ音階, False: 単一ヒット音
+SE_COMBO_HIT_PATH = "assets/audio/jump3.ogg" # 単一ヒット音として使用するSEのパス
+SE_COMBO_HIT_VOLUME = 0.2 # 単一ヒット音の音量 (0.0 ~ 1.0)
+
 SCALE_SOUND_PATHS = [
     "assets/audio/scale_c.ogg",
     "assets/audio/scale_d.ogg",
@@ -43,10 +49,14 @@ SCALE_SOUND_PATHS = [
     "assets/audio/scale_d2.ogg", # 高いレ
     "assets/audio/scale_e2.ogg", # 高いミ
 ]
-SE_ENEMY_DEATH_PATH = "assets/audio/enemy_death2.ogg" # 敵の死亡SE
+SE_ENEMY_DEATH_PATH = "assets/audio/explosion.ogg" # 敵の死亡SE
+SE_ENEMY_HIT_PATH = "assets/audio/dead.ogg" # 敵ヒットSE (死亡しなかった場合)
 SE_TOWER_DAMAGE_PATH = "assets/audio/tower_damage.ogg" # タワーの被ダメージSE
 SE_HEART_COLLECT_PATH = "assets/audio/heart_collect.ogg" # ハート取得SE
 SE_STAGE_START_PATH = "assets/audio/.ogg" # ステージ開始SE
+SE_SPEED_UP_COLLECT_PATH = "assets/audio/SpeedUP.ogg" # スピードアップ取得SE
+SE_SIZE_UP_COLLECT_PATH = "assets/audio/GiantUP.ogg" # 巨大化取得SE
+SE_ITEM_SPAWN_PATH = "assets/audio/item_spawn.ogg" # アイテム出現SE
 SE_UI_CLICK_PATH = "assets/audio/select.ogg" # UIクリックSE
 
 # タイトル画面設定
@@ -77,7 +87,7 @@ BIRD_CALL_TIMEOUT = 2000 # 弾を呼び戻せるようになるまでの時間 (
 # 画面端でのバウンド設定 (実験用)
 ENABLE_SIDE_WALL_BOUNCE = True # Trueにすると画面の左右の壁でボールがバウンドする
 SIDE_WALL_BOUNCINESS = 0.8 # 画面端での反発係数
-SIDE_WALL_DAMAGE = 50 # 画面端の壁に衝突した際に受けるダメージ
+SIDE_WALL_DAMAGE = 100 # 画面端の壁に衝突した際に受けるダメージ
 
 GROUND_COLLISION_SAFE_TIME = 500 # 発射後に地面との衝突判定が有効になるまでの時間 (ミリ秒)
 TOWER_COLLISION_SAFE_TIME = 500 # 発射後に塔との衝突判定が有効になるまでの時間 (ミリ秒)
@@ -146,6 +156,7 @@ GROUND_ANIMATION_MIN_SCALE = 0.95 # 衝突時に縮む最小スケール
 GROUND_ANIMATION_MIN_VELOCITY_Y = 5.0 # 地面のアニメーションが開始される最低垂直速度
 
 # 雲の設定
+CLOUD_COLLISION_SAFE_TIME = 150 # 発射後に雲との衝突判定が有効になるまでの時間 (ミリ秒)
 CLOUD_BOUNCINESS = 1.05 # 雲の反発係数
 
 # 雲のアニメーション設定
@@ -208,6 +219,7 @@ SCORE_COMBO_TIER_BONUS = {    # コンボ数に応じた段階的ボーナス
     10: 100,  # 10コンボ以上で+300
     20: 300, # 20コンボ以上で+1000
 }
+SCORE_TOWER_BONUS_PER_BLOCK = 100 # ゲームクリア時のタワーのブロック1つあたりのボーナス点
 
 
 # ボス戦UI設定
@@ -336,10 +348,26 @@ ENEMY_DEATH_EFFECT_COLOR = (255, 100, 100) # エフェクトの色
 ENEMY_DEATH_EFFECT_LINE_WIDTH = 5 # 死亡エフェクトの円の線の太さ (0にすると塗りつぶし)
 
 # ハートアイテムの設定
-HEART_ITEM_SIZE = 50 # ハートアイテムの大きさ
+ITEM_Y_OFFSET = -15 # 雲のてっぺんからのオフセット（負の値で上に）
+HEART_ITEM_SIZE = 40 # ハートアイテムの大きさ
 HEART_ITEM_COLOR = (255, 105, 180) # ハートアイテムの色 (ホットピンク)
 HEART_ITEM_OUTLINE_WIDTH = 2 # ハートアイテムの輪郭線の太さ
-HEART_ITEM_Y_OFFSET = -15 # 雲のてっぺんからのオフセット（負の値で上に）
+
+# スピードアップアイテムの設定
+SPEED_UP_ITEM_SIZE = 40
+SPEED_UP_ITEM_COLOR = (255, 235, 59) # 黄色
+SPEED_UP_ITEM_OUTLINE_COLOR = BLACK
+SPEED_UP_ITEM_OUTLINE_WIDTH = 2
+
+# 巨大化アイテムの設定
+SIZE_UP_ITEM_SIZE = 40
+SIZE_UP_ITEM_COLOR = (100, 221, 23) # 明るい緑
+SIZE_UP_ITEM_OUTLINE_COLOR = BLACK
+SIZE_UP_ITEM_OUTLINE_WIDTH = 2
+
+# アイテム効果設定
+SPEED_BOOST_MULTIPLIER = 2.0 # 速度の増加倍率
+SIZE_BOOST_DURATION = 5000 # 巨大化の持続時間 (ms)
 
 # ハート取得パーティクルエフェクトの設定
 PARTICLE_COUNT_ON_HEART_COLLECT = 25 # ハート取得時に出現するパーティクルの数
@@ -364,3 +392,43 @@ HIT_PARTICLE_COLORS_TOWER = [(200, 200, 200), (150, 150, 150)] # 白/灰色系
 HIT_PARTICLE_COLORS_BOSS_BODY = [(120, 120, 120), (150, 150, 150)] # ボス本体用の灰色系
 HIT_PARTICLE_COLORS_WEAK_POINT = [(0, 255, 255), (179, 229, 252)] # シアン/ライトブルー系
 HIT_PARTICLE_COLORS_WALL = [(100, 100, 255), (150, 150, 255)] # 壁用の青系
+
+# コンボゲージ設定
+COMBO_GAUGE_MAX = 1000
+COMBO_GAUGE_INCREASE_BASE = 25
+COMBO_GAUGE_INCREASE_PER_COMBO = 15
+
+# コンボゲージUI設定
+COMBO_GAUGE_WIDTH = 200
+COMBO_GAUGE_HEIGHT = 20
+COMBO_GAUGE_X = SCREEN_WIDTH / 2
+COMBO_GAUGE_Y = SCREEN_HEIGHT - 40
+COMBO_GAUGE_BG_COLOR = (50, 50, 50)
+COMBO_GAUGE_COLOR = BLUE
+COMBO_GAUGE_OUTLINE_COLOR = BLACK
+COMBO_GAUGE_OUTLINE_WIDTH = 2
+COMBO_GAUGE_FLASH_COLOR = WHITE
+COMBO_GAUGE_FLASH_DURATION = 750 # ms
+COMBO_GAUGE_TEXT_BASE_FONT_SIZE = 24
+COMBO_GAUGE_TEXT_PULSE_ADDITIONAL_SIZE = 48 # 満タン時に基本サイズにこの値が加算される
+ITEM_SPAWN_DELAY_AFTER_GAUGE_MAX = 500 # ゲージ満タン演出が終わってからアイテムが出現するまでの待機時間(ms)
+
+# SEパス
+SE_GAUGE_MAX_PATH = "assets/audio/gauge_max.ogg"
+
+# アイテム出現アニメーション設定
+ITEM_SPAWN_ANIMATION_DURATION = 750 # ms
+ITEM_SPAWN_ANIMATION_MAX_SCALE = 2.5 # 出現時に最大でこの倍率まで大きくなる
+
+# アイテム出現設定
+ITEM_SPAWN_CHANCES = {
+    "heart": 0.5,      
+    "speed_up": 0.3,   
+    "size_up": 0.2     
+}
+
+# 空中アイテム出現ゾーン設定
+AIR_ITEM_SPAWN_X_MIN = 300
+AIR_ITEM_SPAWN_X_MAX = SCREEN_WIDTH - 100
+AIR_ITEM_SPAWN_Y_MIN = 200
+AIR_ITEM_SPAWN_Y_MAX = 500

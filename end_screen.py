@@ -11,16 +11,11 @@ class EndScreen:
         self.boss_font = boss_font
         self.button_font = pygame.font.Font(None, 48) # ボタン用のフォント
 
-        # リスタートボタンのRectを定義
+        # リスタートボタンのRectを定義 (位置はdrawメソッド内で動的に決定)
         button_width, button_height = 240, 60
-        button_x = config.SCREEN_WIDTH / 2 - button_width / 2
-        # 他のリザルトテキストの下に配置
-        result_start_y = config.SCREEN_HEIGHT / 2 - 50
-        line_height = 50
-        button_y = result_start_y + line_height * 5
-        self.restart_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        self.restart_button_rect = pygame.Rect(0, 0, button_width, button_height)
 
-    def draw(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, mouse_pos=(0,0)):
+    def draw(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, tower_height=0, tower_bonus=0, best_tower_height=0, mouse_pos=(0,0)):
         """
         ステージクリアまたはゲームオーバーの画面を描画する。
         :param stage_state: 現在のステージの状態 ("CLEARING", "GAME_OVER", "GAME_WON")
@@ -47,21 +42,23 @@ class EndScreen:
             draw_text(
                 self.screen,
                 message, self.title_font, color,
-                (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 - 150), # 少し上に表示
+                (config.SCREEN_WIDTH / 2, 100), # 少し上に表示
                 config.BLACK, config.UI_TITLE_OUTLINE_WIDTH
             )
 
             # --- リザルト表示 ---
-            result_start_y = config.SCREEN_HEIGHT / 2 - 50
-            line_height = 50
+            result_start_y = config.SCREEN_HEIGHT / 2 - 150 # 全体をさらに少し上に
+            line_height = 42
+            current_y = result_start_y
 
             # スコア
             draw_text(
                 self.screen,
                 f"SCORE: {score}", self.result_font, config.WHITE,
-                (config.SCREEN_WIDTH / 2, result_start_y),
+                (config.SCREEN_WIDTH / 2, current_y),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
+            current_y += line_height
 
             # ハイスコア
             is_new_high_score = score > high_score
@@ -70,24 +67,59 @@ class EndScreen:
             draw_text(
                 self.screen,
                 high_score_text, self.result_font, high_score_color,
-                (config.SCREEN_WIDTH / 2, result_start_y + line_height),
+                (config.SCREEN_WIDTH / 2, current_y),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
             if is_new_high_score:
                 draw_text(
                     self.screen,
                     "NEW RECORD!", self.boss_font, config.YELLOW,
-                    (config.SCREEN_WIDTH / 2 + 300, result_start_y + line_height),
+                    (config.SCREEN_WIDTH / 2 + 300, current_y),
                     config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
                 )
+            current_y += line_height * 1.5 # スコア項目とタワー項目を少し離す
+
+            # タワー関連の表示 (GAME_WONの時のみ)
+            if stage_state == "GAME_WON":
+                draw_text(
+                    self.screen,
+                    f"TOWER HEIGHT: {tower_height} Blocks", self.result_font, config.WHITE,
+                    (config.SCREEN_WIDTH / 2, current_y),
+                    config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+                )
+                current_y += line_height
+                draw_text(
+                    self.screen,
+                    f"TOWER BONUS: +{tower_bonus}", self.result_font, config.YELLOW,
+                    (config.SCREEN_WIDTH / 2, current_y),
+                    config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+                )
+                current_y += line_height
+
+                # 最高のタワーの高さ
+                is_new_best_height = tower_height > best_tower_height
+                best_height_color = config.YELLOW if is_new_best_height else config.WHITE
+                best_height_text = f"BEST HEIGHT: {best_tower_height if not is_new_best_height else tower_height}"
+                draw_text(
+                    self.screen,
+                    best_height_text, self.result_font, best_height_color,
+                    (config.SCREEN_WIDTH / 2, current_y),
+                    config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+                )
+                if is_new_best_height:
+                    draw_text(
+                        self.screen, "NEW RECORD!", self.boss_font, config.YELLOW,
+                        (config.SCREEN_WIDTH / 2 + 300, current_y), config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH)
+                current_y += line_height * 1.5 # タワー項目とコンボ項目を少し離す
 
             # 最大コンボ
             draw_text(
                 self.screen,
                 f"MAX COMBO: {max_combo}", self.result_font, config.WHITE,
-                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 2.5),
+                (config.SCREEN_WIDTH / 2, current_y),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
+            current_y += line_height
 
             # ベストコンボ
             is_new_best_combo = max_combo > best_combo
@@ -96,11 +128,20 @@ class EndScreen:
             draw_text(
                 self.screen,
                 best_combo_text, self.result_font, best_combo_color,
-                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 3.5),
+                (config.SCREEN_WIDTH / 2, current_y),
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
+            if is_new_best_combo:
+                draw_text(
+                    self.screen,
+                    "NEW RECORD!", self.boss_font, config.YELLOW,
+                    (config.SCREEN_WIDTH / 2 + 300, current_y),
+                    config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
+                )
+            current_y += line_height * 1.5 # 少し間隔をあける
 
             # --- リスタートボタンの描画 ---
+            self.restart_button_rect.center = (config.SCREEN_WIDTH / 2, current_y + 30)
             is_hovered = self.restart_button_rect.collidepoint(mouse_pos)
             button_color = config.ORANGE_HOVER if is_hovered else config.ORANGE
             button_text = "RESTART" if stage_state == "GAME_OVER" else "PLAY AGAIN"

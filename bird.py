@@ -21,6 +21,8 @@ class Bird:
         self.combo_count = 0 # 1回のショットでのコンボ数を記録
         self.angle = 0 # 回転角度
         self.angular_velocity = 0 # 回転の角速度 (度/フレーム)
+        self.radius_before_boost = 0 # 巨大化前の半径を保存
+        self.size_boost_end_time = 0 # 巨大化効果の終了時間
         self._create_image() # 描画用のSurfaceを初期作成
 
     def _update_stats(self):
@@ -68,6 +70,14 @@ class Bird:
         self.velocity.y += config.GRAVITY
         self.pos += self.velocity
 
+        # --- 巨大化効果のチェック ---
+        if self.size_boost_end_time > 0 and pygame.time.get_ticks() > self.size_boost_end_time:
+            print("巨大化効果が終了。")
+            self.radius = self.radius_before_boost
+            self.size_boost_end_time = 0
+            self._update_stats()
+            self._create_image()
+
         # --- 回転処理 (角速度ベース) ---
         is_on_ground = self.pos.y + self.radius >= config.GROUND_Y - 1
         if is_on_ground and abs(self.velocity.x) > 0.1:
@@ -97,6 +107,30 @@ class Bird:
         self.launch_time = pygame.time.get_ticks() # 発射時にタイマーを開始
         # 発射方向を記録（Y速度が負なら上向きに発射）
         self.launched_upwards = self.velocity.y < 0
+
+    def apply_speed_boost(self):
+        """スピードアップアイテムの効果を適用する。"""
+        self.velocity *= config.SPEED_BOOST_MULTIPLIER
+        print(f"スピードブースト！ 速度が {config.SPEED_BOOST_MULTIPLIER}倍に。")
+
+    def apply_size_boost(self):
+        """巨大化アイテムの効果を適用する。"""
+        # すでに巨大化している場合は効果時間を延長するだけ
+        if self.size_boost_end_time > 0:
+            self.size_boost_end_time += config.SIZE_BOOST_DURATION
+            print("巨大化効果を延長！")
+        else:
+            # 巨大化前の半径を保存
+            self.radius_before_boost = self.radius
+            # 半径を最大値まで大きくする
+            self.radius = config.BIRD_MAX_RADIUS
+            # ステータスを更新
+            self._update_stats()
+            self._create_image()
+            print(f"巨大化！ 半径が {self.radius} に。")
+        
+        # 効果終了時間をセット
+        self.size_boost_end_time = pygame.time.get_ticks() + config.SIZE_BOOST_DURATION
 
     def power_up(self):
         """ボールをパワーアップして大きくする。クールダウンを考慮する。"""
@@ -243,6 +277,7 @@ class Bird:
         self.last_power_up_time = 0 # パワーアップのクールタイムもリセット
         self.launched_upwards = False # 発射方向フラグをリセット
         self.combo_count = 0 # コンボカウントをリセット
+        self.size_boost_end_time = 0 # 巨大化効果もリセット
         self.angle = 0 # 角度をリセット
         self.angular_velocity = 0 # 角速度をリセット
         self._create_image() # 画像を再生成

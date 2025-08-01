@@ -13,6 +13,8 @@ from ground import Ground
 from enemy import Enemy
 from tower import Tower
 from heart_item import HeartItem
+from speed_up_item import SpeedUpItem
+from size_up_item import SizeUpItem
 from flying_enemy import FlyingEnemy
 from game_logic import GameLogicManager, calculate_trajectory
 from ui import UIManager
@@ -54,6 +56,7 @@ class Game:
         save_data = self.data_manager.load_data()
         self.high_score = save_data.get("high_score", 0)
         self.best_combo = save_data.get("best_combo", 0)
+        self.best_tower_height = save_data.get("best_tower_height", 0)
         sound_enabled = save_data.get("sound_enabled", True)
 
         # オーディオマネージャーのインスタンスを作成
@@ -91,12 +94,15 @@ class Game:
         self._setup_level(self.initial_tower_top_y)
 
         self.heart_items = []
+        self.speed_up_items = []
+        self.size_up_items = []
         self.particles = []
         self.slingshot_pos = pygame.math.Vector2(self.slingshot_x, self.tower.get_top_y() + config.SLINGSHOT_OFFSET_Y)
 
         self.game_logic_manager = GameLogicManager(
             self.bird, self.tower, self.clouds, self.ground, self.enemies,
-            self.heart_items, self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
+            self.heart_items, self.speed_up_items, self.size_up_items,
+            self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
             play_start_sound=play_start_sound
         )
 
@@ -147,6 +153,7 @@ class Game:
                             print("--- Clearing save data (High Score & Best Combo) ---")
                             self.high_score = 0
                             self.best_combo = 0
+                            self.best_tower_height = 0
                             self._save_current_settings()
                 
                 # ゲームオーバー/クリア時のボタン入力
@@ -256,6 +263,8 @@ class Game:
                 self.bird.start_pos = self.slingshot_pos.copy()
 
             for heart in self.heart_items: heart.update()
+            for item in self.speed_up_items: item.update()
+            for item in self.size_up_items: item.update()
             for p in self.particles: p.update()
             for enemy in self.enemies:
                 if isinstance(enemy, FlyingEnemy):
@@ -276,10 +285,16 @@ class Game:
                 self._process_game_over_scores()
 
     def _process_game_over_scores(self):
-        """ゲームオーバー時にスコアを処理し、ハイスコアを更新・保存する。"""
-        print("ゲームオーバー処理を開始します。")
+        """ゲームオーバー/クリア時にスコアを処理し、ハイスコアを更新・保存する。"""
+        print("ゲーム終了処理を開始します。")
+
+        # ゲームクリア時のみタワーボーナスを加算
+        if self.game_logic_manager.stage_state == "GAME_WON":
+            self.game_logic_manager.calculate_and_add_tower_bonus()
+
         current_score = self.game_logic_manager.current_score
         max_combo = self.game_logic_manager.max_combo_count
+        final_height = self.game_logic_manager.final_block_count
         
         record_updated = False
         if current_score > self.high_score:
@@ -292,10 +307,17 @@ class Game:
             self.best_combo = max_combo
             record_updated = True
 
+        # ゲームクリア時のみ、最高の高さをチェック・更新
+        if self.game_logic_manager.stage_state == "GAME_WON" and final_height > self.best_tower_height:
+            print(f"最高のタワーの高さ更新！ {self.best_tower_height} -> {final_height}")
+            self.best_tower_height = final_height
+            record_updated = True
+
         if record_updated:
             save_data = {
                 "high_score": self.high_score,
-                "best_combo": self.best_combo
+                "best_combo": self.best_combo,
+                "best_tower_height": self.best_tower_height
             }
             self.data_manager.save_data(save_data)
         
@@ -310,7 +332,8 @@ class Game:
         save_data = {
             "high_score": self.high_score,
             "best_combo": self.best_combo,
-            "sound_enabled": sound_enabled
+            "sound_enabled": sound_enabled,
+            "best_tower_height": self.best_tower_height
         }
         self.data_manager.save_data(save_data)
 
@@ -341,6 +364,8 @@ class Game:
             # --- ゲームプレイ中のオブジェクト描画 ---
             for enemy in self.enemies: enemy.draw(self.screen)
             for heart in self.heart_items: heart.draw(self.screen)
+            for item in self.speed_up_items: item.draw(self.screen)
+            for item in self.size_up_items: item.draw(self.screen)
             for p in self.particles: p.draw(self.screen)
 
             if self.is_dragging:
@@ -389,6 +414,8 @@ class Game:
                 self.game_logic_manager.stage_manager.current_stage,
                 self.game_logic_manager.max_combo_count,
                 self.game_logic_manager.current_score,
+                self.game_logic_manager.combo_gauge,
+                config.COMBO_GAUGE_MAX,
                 boss=boss,
                 boss_name=boss_name
             )
@@ -400,6 +427,9 @@ class Game:
                     high_score=self.high_score,
                     max_combo=self.game_logic_manager.max_combo_count,
                     best_combo=self.best_combo,
+                    tower_height=self.game_logic_manager.final_block_count,
+                    tower_bonus=self.game_logic_manager.tower_bonus_score,
+                    best_tower_height=self.best_tower_height,
                     mouse_pos=mouse_pos
                 )
 

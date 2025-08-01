@@ -22,6 +22,14 @@ class AudioManager:
         if not any(self.music_loaded.values()):
             print("警告: BGMファイルが一つも見つかりません。BGMは再生されません。")
         
+        # --- コンボヒットSEの読み込み ---
+        self.combo_hit_sound = None
+        if os.path.exists(config.SE_COMBO_HIT_PATH):
+            self.combo_hit_sound = pygame.mixer.Sound(config.SE_COMBO_HIT_PATH)
+            self.combo_hit_sound.set_volume(config.SE_COMBO_HIT_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_COMBO_HIT_PATH}")
+
         # --- SEの初期化 ---
         self.scale_sounds = []
         sounds_found = 0
@@ -46,6 +54,14 @@ class AudioManager:
             self.enemy_death_sound.set_volume(config.SE_VOLUME)
         else:
             print(f"警告: SEファイルが見つかりません: {config.SE_ENEMY_DEATH_PATH}")
+
+        # 敵ヒットSEの読み込み
+        self.enemy_hit_sound = None
+        if os.path.exists(config.SE_ENEMY_HIT_PATH):
+            self.enemy_hit_sound = pygame.mixer.Sound(config.SE_ENEMY_HIT_PATH)
+            self.enemy_hit_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_ENEMY_HIT_PATH}")
 
         # タワーダメージSEの読み込み
         self.tower_damage_sound = None
@@ -78,6 +94,38 @@ class AudioManager:
             self.ui_click_sound.set_volume(config.SE_VOLUME)
         else:
             print(f"警告: SEファイルが見つかりません: {config.SE_UI_CLICK_PATH}")
+
+        # アイテム出現SEの読み込み
+        self.item_spawn_sound = None
+        if os.path.exists(config.SE_ITEM_SPAWN_PATH):
+            self.item_spawn_sound = pygame.mixer.Sound(config.SE_ITEM_SPAWN_PATH)
+            self.item_spawn_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_ITEM_SPAWN_PATH}")
+
+        # スピードアップ取得SEの読み込み
+        self.speed_up_collect_sound = None
+        if os.path.exists(config.SE_SPEED_UP_COLLECT_PATH):
+            self.speed_up_collect_sound = pygame.mixer.Sound(config.SE_SPEED_UP_COLLECT_PATH)
+            self.speed_up_collect_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_SPEED_UP_COLLECT_PATH}")
+
+        # 巨大化取得SEの読み込み
+        self.size_up_collect_sound = None
+        if os.path.exists(config.SE_SIZE_UP_COLLECT_PATH):
+            self.size_up_collect_sound = pygame.mixer.Sound(config.SE_SIZE_UP_COLLECT_PATH)
+            self.size_up_collect_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_SIZE_UP_COLLECT_PATH}")
+
+        # ゲージ満タンSEの読み込み
+        self.gauge_max_sound = None
+        if os.path.exists(config.SE_GAUGE_MAX_PATH):
+            self.gauge_max_sound = pygame.mixer.Sound(config.SE_GAUGE_MAX_PATH)
+            self.gauge_max_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_GAUGE_MAX_PATH}")
 
         pygame.mixer.music.set_volume(config.BGM_VOLUME)
         self.scale_index = 0
@@ -118,6 +166,19 @@ class AudioManager:
             pygame.mixer.music.fadeout(config.BGM_FADEOUT_MS)
             self.current_bgm_type = None
 
+    def play_combo_sound(self):
+        """
+        コンボヒット音を再生する。設定に応じて音階SEか単一SEかを切り替える。
+        """
+        if not self.enabled:
+            return
+
+        if config.USE_SCALE_SOUND_FOR_COMBO:
+            self.play_scale_sound()
+        else:
+            if self.combo_hit_sound:
+                self.combo_hit_sound.play()
+
     def play_scale_sound(self):
         """現在の音階のSEを再生し、次の音階に進める。"""
         if not self.enabled or not self.scale_sounds:
@@ -134,6 +195,11 @@ class AudioManager:
         """敵の死亡SEを再生する。"""
         if self.enabled and self.enemy_death_sound:
             self.enemy_death_sound.play()
+
+    def play_enemy_hit_sound(self):
+        """敵ヒットSEを再生する。"""
+        if self.enabled and self.enemy_hit_sound:
+            self.enemy_hit_sound.play()
 
     def play_tower_damage_sound(self):
         """タワーのダメージSEを再生する。"""
@@ -154,6 +220,26 @@ class AudioManager:
         """UIクリックSEを再生する。"""
         if self.enabled and self.ui_click_sound:
             self.ui_click_sound.play()
+
+    def play_item_spawn_sound(self):
+        """アイテム出現SEを再生する。"""
+        if self.enabled and self.item_spawn_sound:
+            self.item_spawn_sound.play()
+
+    def play_speed_up_collect_sound(self):
+        """スピードアップ取得SEを再生する。"""
+        if self.enabled and self.speed_up_collect_sound:
+            self.speed_up_collect_sound.play()
+
+    def play_size_up_collect_sound(self):
+        """巨大化取得SEを再生する。"""
+        if self.enabled and self.size_up_collect_sound:
+            self.size_up_collect_sound.play()
+
+    def play_gauge_max_sound(self):
+        """ゲージ満タンSEを再生する。"""
+        if self.enabled and self.gauge_max_sound:
+            self.gauge_max_sound.play()
 
     def reset_scale(self):
         """音階を最初（ド）に戻す。"""
