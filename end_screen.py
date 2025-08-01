@@ -9,8 +9,18 @@ class EndScreen:
         self.title_font = title_font
         self.result_font = result_font
         self.boss_font = boss_font
+        self.button_font = pygame.font.Font(None, 48) # ボタン用のフォント
 
-    def draw(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0):
+        # リスタートボタンのRectを定義
+        button_width, button_height = 240, 60
+        button_x = config.SCREEN_WIDTH / 2 - button_width / 2
+        # 他のリザルトテキストの下に配置
+        result_start_y = config.SCREEN_HEIGHT / 2 - 50
+        line_height = 50
+        button_y = result_start_y + line_height * 5
+        self.restart_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+
+    def draw(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, mouse_pos=(0,0)):
         """
         ステージクリアまたはゲームオーバーの画面を描画する。
         :param stage_state: 現在のステージの状態 ("CLEARING", "GAME_OVER", "GAME_WON")
@@ -30,11 +40,9 @@ class EndScreen:
             if stage_state == "GAME_OVER":
                 message = "GAME OVER"
                 color = config.RED
-                restart_text = "Press 'R' to Restart"
             else: # GAME_WON
                 message = "GAME CLEAR!"
                 color = config.AQUA
-                restart_text = "Press 'R' to Play Again"
 
             draw_text(
                 self.screen,
@@ -92,10 +100,11 @@ class EndScreen:
                 config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
 
-            # --- リスタート案内 ---
-            draw_text(
-                self.screen,
-                restart_text, self.result_font, config.WHITE,
-                (config.SCREEN_WIDTH / 2, result_start_y + line_height * 5),
-                config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
-            )
+            # --- リスタートボタンの描画 ---
+            is_hovered = self.restart_button_rect.collidepoint(mouse_pos)
+            button_color = config.ORANGE_HOVER if is_hovered else config.ORANGE
+            button_text = "RESTART" if stage_state == "GAME_OVER" else "PLAY AGAIN"
+
+            pygame.draw.rect(self.screen, button_color, self.restart_button_rect, border_radius=15)
+            pygame.draw.rect(self.screen, config.BLACK, self.restart_button_rect, width=3, border_radius=15)
+            draw_text(self.screen, button_text, self.button_font, config.WHITE, self.restart_button_rect.center, config.BLACK, 2)

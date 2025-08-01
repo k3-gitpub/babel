@@ -148,6 +148,16 @@ class Game:
                             self.best_combo = 0
                             self._save_current_settings()
                 
+                # ゲームオーバー/クリア時のボタン入力
+                if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"]:
+                    if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1) or event.type == pygame.FINGERDOWN:
+                        pos = event.pos if event.type == pygame.MOUSEBUTTONDOWN else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                        # リスタートボタンがクリックされたか判定
+                        if self.ui_manager.end_screen.restart_button_rect.collidepoint(pos):
+                            if self.audio_manager: self.audio_manager.play_ui_click_sound()
+                            self._reset_game(play_start_sound=True)
+                            print("--- Level Restarted via Button ---")
+                
                 # --- マウス・タッチ入力の統合 ---
                 
                 # 1. プレスダウン処理
@@ -302,6 +312,7 @@ class Game:
 
     def _draw_screen(self):
         """描画処理 (Draw)"""
+        mouse_pos = pygame.mouse.get_pos()
         # --- 共通の背景描画 ---
         self.screen.fill(config.BLUE)
         for cloud in self.clouds: cloud.draw(self.screen)
@@ -313,8 +324,15 @@ class Game:
             self.title_scene.draw(self.screen)
 
         elif self.game_state == "PLAYING":
-            # ゲームプレイ中はカーソルを通常に戻す
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            # --- カーソル形状の更新 ---
+            if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"]:
+                is_restart_hovered = self.ui_manager.end_screen.restart_button_rect.collidepoint(mouse_pos)
+                if is_restart_hovered:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                else:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             self.tower.draw(self.screen)
             # --- ゲームプレイ中のオブジェクト描画 ---
             for enemy in self.enemies: enemy.draw(self.screen)
@@ -377,7 +395,8 @@ class Game:
                     score=self.game_logic_manager.current_score,
                     high_score=self.high_score,
                     max_combo=self.game_logic_manager.max_combo_count,
-                    best_combo=self.best_combo
+                    best_combo=self.best_combo,
+                    mouse_pos=mouse_pos
                 )
 
             self.ui_manager.draw_ui_overlays()
