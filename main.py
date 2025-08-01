@@ -148,41 +148,44 @@ class Game:
                             self.best_combo = 0
                             self._save_current_settings()
                 
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if self.recall_button_rect and self.recall_button_rect.collidepoint(event.pos):
+                # --- マウス・タッチ入力の統合 ---
+                
+                # 1. プレスダウン処理
+                if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1) or event.type == pygame.FINGERDOWN:
+                    pos = event.pos if event.type == pygame.MOUSEBUTTONDOWN else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                    
+                    # リコールボタンの判定
+                    if self.recall_button_rect and self.recall_button_rect.collidepoint(pos):
                         if self.audio_manager: self.audio_manager.reset_scale()
                         self.bird.reset(self.slingshot_pos)
                         self.game_logic_manager.is_bird_callable = False
                         self.last_activity_time = pygame.time.get_ticks()
                         print("Bird recalled manually.")
-
-                # マウス入力
-                if not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1 and self.bird.is_clicked(event.pos):
+                    # ボールをドラッグ開始
+                    elif not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
+                        if self.bird.is_clicked(pos):
                             self.is_dragging = True
-                            self.mouse_pos.x, self.mouse_pos.y = event.pos
+                            self.mouse_pos.x, self.mouse_pos.y = pos
                             self.show_drag_indicator = False
                             self.last_activity_time = pygame.time.get_ticks()
-                    
-                    if event.type == pygame.MOUSEMOTION:
-                        if self.is_dragging:
-                            self.mouse_pos.x, self.mouse_pos.y = event.pos
 
-                    if event.type == pygame.MOUSEBUTTONUP:
-                        if event.button == 1 and self.is_dragging:
-                            pull_distance = self.slingshot_pos.distance_to(self.bird.pos)
-                            self.is_dragging = False
-                            # 一定以上引っ張られていた場合のみ発射
-                            if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
-                                launch_vector = self.slingshot_pos - self.bird.pos
-                                self.bird.launch(launch_vector)
-                                self.last_activity_time = pygame.time.get_ticks()
-                            else:
-                                # 引っ張りが足りない場合は発射をキャンセル
-                                self.bird.cancel_launch()
-                                print("Pull distance too short, launch cancelled.")
-                            self.trajectory_points.clear() # どちらの場合も軌道は消す
+                # 2. ドラッグ中の移動処理
+                if self.is_dragging and (event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION):
+                    pos = event.pos if event.type == pygame.MOUSEMOTION else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                    self.mouse_pos.x, self.mouse_pos.y = pos
+
+                # 3. リリース処理
+                if self.is_dragging and ((event.type == pygame.MOUSEBUTTONUP and event.button == 1) or event.type == pygame.FINGERUP):
+                    pull_distance = self.slingshot_pos.distance_to(self.bird.pos)
+                    self.is_dragging = False
+                    if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
+                        launch_vector = self.slingshot_pos - self.bird.pos
+                        self.bird.launch(launch_vector)
+                        self.last_activity_time = pygame.time.get_ticks()
+                    else:
+                        self.bird.cancel_launch()
+                        print("Pull distance too short, launch cancelled.")
+                    self.trajectory_points.clear()
 
     def _update_state(self):
         """状態更新 (Update)"""

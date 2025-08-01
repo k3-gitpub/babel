@@ -2,7 +2,7 @@
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FPS = 60
-DEBUG = True # デバッグモードのフラグ。リリース時にはFalseに設定
+DEBUG = False # デバッグモードのフラグ。リリース時にはFalseに設定
 DEBUG_START_STAGE = 1 # デバッグモード時に開始するステージ番号
 
 # 色の定義
