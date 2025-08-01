@@ -49,6 +49,7 @@ class TitleScene:
         self.mouse_pos = pygame.math.Vector2(0, 0)
         self.show_drag_indicator = True # DRAG表示用のフラグ
         self.last_activity_time = pygame.time.get_ticks() # 最後の入力やボールリセットの時間
+        self.drag_start_pos = None # ドラッグ開始位置を記録
         self.was_bird_flying = False # 前フレームでボールが飛んでいたか
 
         # にぎやかし用の敵を管理するリストとタイマー
@@ -130,14 +131,15 @@ class TitleScene:
                     self.audio_manager.play_ui_click_sound()
                     self.audio_manager.toggle_enabled()
                 return "TOGGLE_SOUND"
-            
-            # ボールをドラッグ開始
-            if self.bird.is_clicked(pos):
+
+            # UI以外の場所をタッチしてドラッグ開始
+            elif not self.bird.is_flying:
                 self.is_dragging = True
+                self.drag_start_pos = pygame.math.Vector2(pos) # タッチ開始点を記録
                 self.mouse_pos.x, self.mouse_pos.y = pos
                 self.show_drag_indicator = False # ドラッグを開始したら非表示に
                 self.last_activity_time = pygame.time.get_ticks()
-        
+
         # 2. ドラッグ中の移動処理
         if self.is_dragging and (event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION):
             pos = event.pos if event.type == pygame.MOUSEMOTION else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
@@ -174,13 +176,16 @@ class TitleScene:
 
         # --- ドラッグ中の処理を追加 ---
         if self.is_dragging:
-            self.bird.pos = self.mouse_pos.copy()
+            # ドラッグ開始点からのベクトルを計算
+            drag_vector = self.mouse_pos - self.drag_start_pos
+            # スリングショットの位置に、ドラッグベクトルを加算してボールを配置（直感的な引っ張り操作）
+            self.bird.pos = self.slingshot_pos + drag_vector
+
             distance = self.slingshot_pos.distance_to(self.bird.pos)
             if distance > config.MAX_PULL_DISTANCE:
                 if distance > 0:
                     direction = (self.bird.pos - self.slingshot_pos).normalize()
                     self.bird.pos = self.slingshot_pos + direction * config.MAX_PULL_DISTANCE
-            
             # 軌道計算
             current_launch_vector = self.slingshot_pos - self.bird.pos
             self.trajectory_points = calculate_trajectory(self.bird.pos, current_launch_vector)
