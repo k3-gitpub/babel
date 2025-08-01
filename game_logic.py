@@ -241,7 +241,7 @@ class GameLogicManager:
         if collided:
             # ヒットマーク（パーティクル）を生成
             self._spawn_particles(collision_pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_WALL)
-            if self.audio_manager: self.audio_manager.play_scale_sound()
+            if self.audio_manager: self.audio_manager.play_combo_sound()
 
     def _handle_enemy_tower_collision(self):
         for enemy in self.enemies:
@@ -294,6 +294,12 @@ class GameLogicManager:
                         break
 
     def _handle_bird_cloud_collision(self):
+        # --- 発射直後の衝突を避けるためのセーフタイム処理 ---
+        if self.bird.launch_time is not None:
+            time_since_launch = pygame.time.get_ticks() - self.bird.launch_time
+            if time_since_launch < config.CLOUD_COLLISION_SAFE_TIME:
+                return # セーフタイム中は衝突処理をスキップ
+
         for cloud in self.clouds:
             collided_puff_info = cloud.collide_with_bird(self.bird)
             if collided_puff_info:
@@ -305,7 +311,7 @@ class GameLogicManager:
                 if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                     self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
 
-                if self.audio_manager: self.audio_manager.play_scale_sound()
+                if self.audio_manager: self.audio_manager.play_combo_sound()
                 self.bird.bounce_off_cloud(collided_puff_info)
                 self.bird.power_up()
                 cloud.start_animation()
@@ -325,7 +331,7 @@ class GameLogicManager:
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
 
-                        if self.audio_manager: self.audio_manager.play_scale_sound()
+                        if self.audio_manager: self.audio_manager.play_combo_sound()
                         self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_TOWER)
                         self.bird.power_up()
                         block.start_animation()
@@ -359,8 +365,10 @@ class GameLogicManager:
                         # --- UI表示の呼び出し ---
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
-                        # 弱点ヒット時に敵死亡SEを再生する
-                        if self.audio_manager: self.audio_manager.play_enemy_death_sound()
+                        # コンボ音と、弱点ヒットSE（死亡SEを流用）を両方再生する
+                        if self.audio_manager:
+                            self.audio_manager.play_combo_sound()
+                            self.audio_manager.play_enemy_death_sound()
                         self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_WEAK_POINT)
 
                         enemy.start_animation() # ボスをひるませる
@@ -392,7 +400,7 @@ class GameLogicManager:
                 # ボス本体にヒット
                 if self.bird.collide_and_bounce_off_rect(enemy, config.BOSS_BODY_BOUNCINESS):
                     print("ボスの本体に命中！ボールがダメージを受ける。")
-                    if self.audio_manager: self.audio_manager.play_scale_sound()
+                    if self.audio_manager: self.audio_manager.play_combo_sound()
                     # ダメージ無しのヒットエフェクトを出す
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_BOSS_BODY)
 
@@ -415,7 +423,7 @@ class GameLogicManager:
                     # --- UI表示の呼び出し ---
                     if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                         self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
-                    if self.audio_manager: self.audio_manager.play_scale_sound()
+                    if self.audio_manager: self.audio_manager.play_combo_sound()
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_ENEMY)
 
                     enemy.start_animation()
@@ -432,6 +440,9 @@ class GameLogicManager:
                         self._calculate_and_add_score(enemy.rect.center, "enemy")
                         if self.audio_manager: self.audio_manager.play_enemy_death_sound()
                         self.enemies_defeated_count += 1
+                    else:
+                        # 敵が死亡しなかった場合は、新しいヒット音を再生
+                        if self.audio_manager: self.audio_manager.play_enemy_hit_sound()
                     if is_bird_defeated:
                         if self.audio_manager: self.audio_manager.reset_scale()
                         self.bird.reset(self.slingshot_pos)

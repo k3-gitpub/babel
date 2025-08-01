@@ -31,6 +31,12 @@ BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ�
 BGM_NORMAL_PATH = "assets/audio/.ogg" # 通常BGMのパス
 BGM_BOSS_PATH = "assets/audio/.ogg" # ボス戦BGMのパス
 SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
+
+# コンボヒット音の設定
+USE_SCALE_SOUND_FOR_COMBO = False # True: ドレミ音階, False: 単一ヒット音
+SE_COMBO_HIT_PATH = "assets/audio/jump3.ogg" # 単一ヒット音として使用するSEのパス
+SE_COMBO_HIT_VOLUME = 0.1 # 単一ヒット音の音量 (0.0 ~ 1.0)
+
 SCALE_SOUND_PATHS = [
     "assets/audio/scale_c.ogg",
     "assets/audio/scale_d.ogg",
@@ -43,7 +49,8 @@ SCALE_SOUND_PATHS = [
     "assets/audio/scale_d2.ogg", # 高いレ
     "assets/audio/scale_e2.ogg", # 高いミ
 ]
-SE_ENEMY_DEATH_PATH = "assets/audio/enemy_death2.ogg" # 敵の死亡SE
+SE_ENEMY_DEATH_PATH = "assets/audio/explosion.ogg" # 敵の死亡SE
+SE_ENEMY_HIT_PATH = "assets/audio/dead.ogg" # 敵ヒットSE (死亡しなかった場合)
 SE_TOWER_DAMAGE_PATH = "assets/audio/tower_damage.ogg" # タワーの被ダメージSE
 SE_HEART_COLLECT_PATH = "assets/audio/heart_collect.ogg" # ハート取得SE
 SE_STAGE_START_PATH = "assets/audio/.ogg" # ステージ開始SE
@@ -146,6 +153,7 @@ GROUND_ANIMATION_MIN_SCALE = 0.95 # 衝突時に縮む最小スケール
 GROUND_ANIMATION_MIN_VELOCITY_Y = 5.0 # 地面のアニメーションが開始される最低垂直速度
 
 # 雲の設定
+CLOUD_COLLISION_SAFE_TIME = 150 # 発射後に雲との衝突判定が有効になるまでの時間 (ミリ秒)
 CLOUD_BOUNCINESS = 1.05 # 雲の反発係数
 
 # 雲のアニメーション設定

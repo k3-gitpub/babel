@@ -22,6 +22,14 @@ class AudioManager:
         if not any(self.music_loaded.values()):
             print("警告: BGMファイルが一つも見つかりません。BGMは再生されません。")
         
+        # --- コンボヒットSEの読み込み ---
+        self.combo_hit_sound = None
+        if os.path.exists(config.SE_COMBO_HIT_PATH):
+            self.combo_hit_sound = pygame.mixer.Sound(config.SE_COMBO_HIT_PATH)
+            self.combo_hit_sound.set_volume(config.SE_COMBO_HIT_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_COMBO_HIT_PATH}")
+
         # --- SEの初期化 ---
         self.scale_sounds = []
         sounds_found = 0
@@ -46,6 +54,14 @@ class AudioManager:
             self.enemy_death_sound.set_volume(config.SE_VOLUME)
         else:
             print(f"警告: SEファイルが見つかりません: {config.SE_ENEMY_DEATH_PATH}")
+
+        # 敵ヒットSEの読み込み
+        self.enemy_hit_sound = None
+        if os.path.exists(config.SE_ENEMY_HIT_PATH):
+            self.enemy_hit_sound = pygame.mixer.Sound(config.SE_ENEMY_HIT_PATH)
+            self.enemy_hit_sound.set_volume(config.SE_VOLUME)
+        else:
+            print(f"警告: SEファイルが見つかりません: {config.SE_ENEMY_HIT_PATH}")
 
         # タワーダメージSEの読み込み
         self.tower_damage_sound = None
@@ -118,6 +134,19 @@ class AudioManager:
             pygame.mixer.music.fadeout(config.BGM_FADEOUT_MS)
             self.current_bgm_type = None
 
+    def play_combo_sound(self):
+        """
+        コンボヒット音を再生する。設定に応じて音階SEか単一SEかを切り替える。
+        """
+        if not self.enabled:
+            return
+
+        if config.USE_SCALE_SOUND_FOR_COMBO:
+            self.play_scale_sound()
+        else:
+            if self.combo_hit_sound:
+                self.combo_hit_sound.play()
+
     def play_scale_sound(self):
         """現在の音階のSEを再生し、次の音階に進める。"""
         if not self.enabled or not self.scale_sounds:
@@ -134,6 +163,11 @@ class AudioManager:
         """敵の死亡SEを再生する。"""
         if self.enabled and self.enemy_death_sound:
             self.enemy_death_sound.play()
+
+    def play_enemy_hit_sound(self):
+        """敵ヒットSEを再生する。"""
+        if self.enabled and self.enemy_hit_sound:
+            self.enemy_hit_sound.play()
 
     def play_tower_damage_sound(self):
         """タワーのダメージSEを再生する。"""
