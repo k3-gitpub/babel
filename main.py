@@ -44,21 +44,23 @@ class Game:
         title_font = pygame.font.Font(None, 120)
         boss_font = pygame.font.Font(None, config.BOSS_NAME_FONT_SIZE)
         combo_font = pygame.font.Font(None, config.COMBO_TEXT_FONT_SIZE)
+        result_font = pygame.font.Font(None, 40)
 
         # UIマネージャーのインスタンスを作成
-        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font)
-
-        # オーディオマネージャーのインスタンスを作成
-        if self.mixer_initialized:
-            self.audio_manager = AudioManager()
-        else:
-            self.audio_manager = None
+        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font, result_font)
 
         # データマネージャーのインスタンスを作成し、ハイスコアを読み込む
         self.data_manager = DataManager()
         save_data = self.data_manager.load_data()
         self.high_score = save_data.get("high_score", 0)
         self.best_combo = save_data.get("best_combo", 0)
+        sound_enabled = save_data.get("sound_enabled", True)
+
+        # オーディオマネージャーのインスタンスを作成
+        if self.mixer_initialized:
+            self.audio_manager = AudioManager(initial_enabled=sound_enabled)
+        else:
+            self.audio_manager = None
 
         # スリングショットのX座標と、タワーの初期の高さを定義
         self.slingshot_x = config.SLINGSHOT_X
@@ -123,6 +125,10 @@ class Game:
                 action = self.title_scene.process_event(event)
                 if action == "START_GAME":
                     self._reset_game(play_start_sound=True)
+                elif action == "TOGGLE_SOUND":
+                    # サウンド設定が変更されたら、現在の設定を保存する
+                    self._save_current_settings()
+
 
             elif self.game_state == "PLAYING":
                 # キーボード入力
@@ -136,6 +142,11 @@ class Game:
                         if pygame.K_1 <= event.key <= pygame.K_9:
                             stage_num = event.key - pygame.K_0
                             self.game_logic_manager.jump_to_stage(stage_num)
+                        if event.key == pygame.K_c:
+                            print("--- Clearing save data (High Score & Best Combo) ---")
+                            self.high_score = 0
+                            self.best_combo = 0
+                            self._save_current_settings()
                 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if self.recall_button_rect and self.recall_button_rect.collidepoint(event.pos):
@@ -160,11 +171,18 @@ class Game:
 
                     if event.type == pygame.MOUSEBUTTONUP:
                         if event.button == 1 and self.is_dragging:
+                            pull_distance = self.slingshot_pos.distance_to(self.bird.pos)
                             self.is_dragging = False
-                            launch_vector = self.slingshot_pos - self.bird.pos
-                            self.bird.launch(launch_vector)
-                            self.last_activity_time = pygame.time.get_ticks()
-                            self.trajectory_points.clear()
+                            # 一定以上引っ張られていた場合のみ発射
+                            if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
+                                launch_vector = self.slingshot_pos - self.bird.pos
+                                self.bird.launch(launch_vector)
+                                self.last_activity_time = pygame.time.get_ticks()
+                            else:
+                                # 引っ張りが足りない場合は発射をキャンセル
+                                self.bird.cancel_launch()
+                                print("Pull distance too short, launch cancelled.")
+                            self.trajectory_points.clear() # どちらの場合も軌道は消す
 
     def _update_state(self):
         """状態更新 (Update)"""
@@ -189,6 +207,9 @@ class Game:
             self.title_scene.update()
         elif self.game_state == "PLAYING":
             # --- DRAG表示のロジック ---
+            # UI要素のアニメーションを更新
+            self.ui_manager.update()
+
             # ボールがちょうどリセットされた瞬間を検知
             if self.was_bird_flying and not self.bird.is_flying:
                 self.last_activity_time = current_time
@@ -263,6 +284,18 @@ class Game:
         
         self.is_game_over_processed = True
 
+    def _save_current_settings(self):
+        """現在の設定（ハイスコア、サウンドON/OFFなど）をファイルに保存する。"""
+        if not self.data_manager:
+            return
+        
+        sound_enabled = self.audio_manager.enabled if self.audio_manager else True
+        save_data = {
+            "high_score": self.high_score,
+            "best_combo": self.best_combo,
+            "sound_enabled": sound_enabled
+        }
+        self.data_manager.save_data(save_data)
 
     def _draw_screen(self):
         """描画処理 (Draw)"""

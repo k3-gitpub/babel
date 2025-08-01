@@ -246,3 +246,14 @@ class Bird:
         self.angle = 0 # 角度をリセット
         self.angular_velocity = 0 # 角速度をリセット
         self._create_image() # 画像を再生成
+
+    def cancel_launch(self):
+        """
+        発射をキャンセルし、ボールをスリングショットの位置に戻す。
+        resetと似ているが、HPや半径は変更しない。
+        """
+        self.pos = self.start_pos.copy()
+        self.velocity = pygame.math.Vector2(0, 0)
+        self.is_flying = False
+        self.angle = 0
+        self.angular_velocity = 0

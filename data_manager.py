@@ -20,20 +20,20 @@ class DataManager:
         """
         if not os.path.exists(self.filename):
             print(f"セーブファイル '{self.filename}' が見つかりません。初期データを作成します。")
-            return {"high_score": 0, "best_combo": 0}
+            return {"high_score": 0, "best_combo": 0, "sound_enabled": True}
 
         try:
             with open(self.filename, 'r') as f:
                 data = json.load(f)
                 # 念のため、キーが存在するかチェック
-                if "high_score" not in data or "best_combo" not in data:
+                if "high_score" not in data or "best_combo" not in data or "sound_enabled" not in data:
                     print(f"セーブファイル '{self.filename}' の形式が不正です。初期データで上書きします。")
-                    return {"high_score": 0, "best_combo": 0}
+                    return {"high_score": 0, "best_combo": 0, "sound_enabled": True}
                 print(f"セーブファイル '{self.filename}' を正常に読み込みました。")
                 return data
         except (json.JSONDecodeError, IOError) as e:
             print(f"セーブファイル '{self.filename}' の読み込みに失敗しました: {e}。初期データを作成します。")
-            return {"high_score": 0, "best_combo": 0}
+            return {"high_score": 0, "best_combo": 0, "sound_enabled": True}
 
     def save_data(self, data):
         """

@@ -202,11 +202,46 @@ class GameLogicManager:
         """全ての衝突判定を処理する。"""
         self._handle_enemy_tower_collision()
         if self.bird.is_flying:
+            self._handle_bird_wall_collision()
             self._handle_bird_cloud_collision()
             self._handle_bird_tower_collision()
             self._handle_bird_heart_collision()
             self._handle_bird_enemy_collision()
             self._handle_bird_ground_collision()
+
+    def _handle_bird_wall_collision(self):
+        """画面の左右の壁とボールの衝突を処理する。"""
+        if not config.ENABLE_SIDE_WALL_BOUNCE:
+            return
+
+        bird = self.bird
+        collided = False
+        collision_pos = None
+
+        # 左の壁 (速度が左向きの場合のみ)
+        if bird.pos.x - bird.radius < 0 and bird.velocity.x < 0:
+            bird.pos.x = bird.radius
+            bird.velocity.x *= -config.SIDE_WALL_BOUNCINESS
+            bird.take_damage(config.SIDE_WALL_DAMAGE)
+            collided = True
+            # 衝突位置を壁の表面に補正してエフェクトを出す
+            collision_pos = pygame.math.Vector2(bird.radius, bird.pos.y)
+            print("ボールが左の壁に衝突！")
+
+        # 右の壁 (速度が右向きの場合のみ)
+        elif bird.pos.x + bird.radius > config.SCREEN_WIDTH and bird.velocity.x > 0:
+            bird.pos.x = config.SCREEN_WIDTH - bird.radius
+            bird.velocity.x *= -config.SIDE_WALL_BOUNCINESS
+            bird.take_damage(config.SIDE_WALL_DAMAGE)
+            collided = True
+            # 衝突位置を壁の表面に補正してエフェクトを出す
+            collision_pos = pygame.math.Vector2(config.SCREEN_WIDTH - bird.radius, bird.pos.y)
+            print("ボールが右の壁に衝突！")
+
+        if collided:
+            # ヒットマーク（パーティクル）を生成
+            self._spawn_particles(collision_pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_WALL)
+            if self.audio_manager: self.audio_manager.play_scale_sound()
 
     def _handle_enemy_tower_collision(self):
         for enemy in self.enemies:
@@ -330,6 +365,11 @@ class GameLogicManager:
 
                         enemy.start_animation() # ボスをひるませる
                         is_enemy_defeated = enemy.take_damage(self.bird.attack_power)
+
+                        # --- スコア加算処理 ---
+                        # 弱点ヒット時にスコアを加算する
+                        self._calculate_and_add_score(self.bird.pos, "boss_weak_point")
+
                         self.bird.power_up() # 弱点に当てたらバードはダメージを受けずにパワーアップ
                         # ボスをノックバックさせる
                         direction = pygame.math.Vector2(enemy.rect.center) - self.bird.pos
@@ -341,7 +381,6 @@ class GameLogicManager:
                         enemy.force_switch_weak_point()
 
                         if is_enemy_defeated:
-                            self._calculate_and_add_score(enemy.rect.center)
                             print("ボスを撃破した！")
                             # 音は弱点ヒット時に再生されるため、ここでは不要
                         hit_weak_point = True
@@ -352,11 +391,17 @@ class GameLogicManager:
                 # 2. 弱点にヒットしなかった場合、ボス本体との衝突判定を行う
                 # ボス本体にヒット
                 if self.bird.collide_and_bounce_off_rect(enemy, config.BOSS_BODY_BOUNCINESS):
-                    print("ボスの本体に命中！(ダメージなし)")
+                    print("ボスの本体に命中！ボールがダメージを受ける。")
                     if self.audio_manager: self.audio_manager.play_scale_sound()
                     # ダメージ無しのヒットエフェクトを出す
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_BOSS_BODY)
-                    # ここではボスへのダメージ、ノックバック、バードのパワーアップは行わない
+
+                    # ボールにダメージを与える (専用のダメージ値を使用)
+                    is_bird_defeated = self.bird.take_damage(config.BOSS_BODY_CONTACT_DAMAGE_TO_BIRD)
+                    # ボールが破壊されたらリセット
+                    if is_bird_defeated:
+                        if self.audio_manager: self.audio_manager.reset_scale()
+                        self.bird.reset(self.slingshot_pos)
                     break # 敵ループを抜ける
             
             # --- 通常の敵との衝突判定 ---
@@ -384,7 +429,7 @@ class GameLogicManager:
                     force = config.ENEMY_KNOCKBACK_FORCE + (self.bird.attack_power * config.ENEMY_KNOCKBACK_ATTACK_POWER_SCALE)
                     enemy.knockback(direction, force)
                     if is_enemy_defeated:
-                        self._calculate_and_add_score(enemy.rect.center)
+                        self._calculate_and_add_score(enemy.rect.center, "enemy")
                         if self.audio_manager: self.audio_manager.play_enemy_death_sound()
                         self.enemies_defeated_count += 1
                     if is_bird_defeated:
@@ -411,13 +456,23 @@ class GameLogicManager:
             self.bird.velocity.x *= config.FRICTION
 
     def _check_bird_reset(self):
-        """弾がリセットされるべきか（画面外、停止）をチェックする。"""
+        """弾がリセットされるべきか（破壊、画面外、停止）をチェックする。"""
         if not self.bird.is_flying:
+            return
+
+        # --- HPが0になったらリセット ---
+        # 壁やその他の要因でHPが0になった場合に対応
+        if self.bird.hp <= 0:
+            print("Bird was destroyed by damage. Resetting.")
+            if self.audio_manager: self.audio_manager.reset_scale()
+            self.bird.reset(self.slingshot_pos)
             return
 
         is_off_screen = (self.bird.pos.x < -self.bird.radius or
                          self.bird.pos.x > config.SCREEN_WIDTH + self.bird.radius)
-        if is_off_screen:
+        
+        # 壁バウンドが無効な場合のみ、画面外に出たらリセットする
+        if not config.ENABLE_SIDE_WALL_BOUNCE and is_off_screen:
             if self.audio_manager: self.audio_manager.reset_scale()
             self.bird.reset(self.slingshot_pos)
             return
@@ -531,38 +586,38 @@ class GameLogicManager:
                 colors
             ))
 
-    def _calculate_and_add_score(self, enemy_pos):
+    def _calculate_and_add_score(self, enemy_pos, target_type="enemy"):
         """
         敵を倒した際のスコアを計算し、加算する。
-        パターンD（ハイブリッド方式）を採用。
+        :param enemy_pos: スコア表示の基準位置
+        :param target_type: 倒した/ヒットした対象の種類 ('enemy', 'boss_weak_point'など)
         """
         # --- スコア計算 ---
         combo_count = self.bird.combo_count
 
         # 基本点
-        score_to_add = 100
-        
+        score_to_add = config.SCORE_BASE_POINTS.get(target_type, 100)
+
         # コンボボーナス
         linear_bonus = 0
         tiered_bonus = 0
         if combo_count >= 2:
-            # 線形ボーナス: (コンボ数 - 1) * 20点
-            linear_bonus = (combo_count - 1) * 20
-            
+            # 線形ボーナス
+            linear_bonus = (combo_count - 1) * config.SCORE_COMBO_LINEAR_BONUS
+
             # 段階ボーナス
-            if 5 <= combo_count <= 9:
-                tiered_bonus = 100
-            elif 10 <= combo_count <= 19:
-                tiered_bonus = 300
-            elif combo_count >= 20:
-                tiered_bonus = 1000
-        
+            # configの辞書を降順でループして、条件に合う最初のボーナスを適用
+            for tier, bonus in sorted(config.SCORE_COMBO_TIER_BONUS.items(), reverse=True):
+                if combo_count >= tier:
+                    tiered_bonus = bonus
+                    break
+
         total_bonus = linear_bonus + tiered_bonus
         score_to_add += total_bonus
-        
+
         # --- スコア加算とUIへの通知 ---
         self.current_score += score_to_add
-        print(f"敵を撃破！ +{score_to_add}点 (コンボボーナス: +{total_bonus}点) -> 合計スコア: {self.current_score}")
+        print(f"対象({target_type})にヒット！ +{score_to_add}点 (コンボボーナス: +{total_bonus}点) -> 合計スコア: {self.current_score}")
 
         # UIにスコア表示を依頼
         if score_to_add > 0:

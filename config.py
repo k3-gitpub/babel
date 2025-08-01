@@ -56,6 +56,7 @@ TITLE_TOWER_BLOCKS = 7            # タイトル画面のタワーのブロッ�
 
 # 弾の設定
 MAX_PULL_DISTANCE = 100 # スリングショットから引っ張れる最大距離
+MIN_PULL_DISTANCE_TO_LAUNCH = 20 # 発射するために最低限必要なドラッグ距離
 BIRD_DEFAULT_RADIUS = 20 # 弾の初期半径
 SLINGSHOT_OFFSET_Y = -20 # 塔のてっぺんからのオフセット（負の値で上に）
 
@@ -72,6 +73,12 @@ BIRD_POWER_UP_COOLDOWN = 500 # パワーアップのクールダウン時間 (�
 BIRD_RESET_MIN_VELOCITY_SQUARED = 2 # 弾がこの速度(の2乗)以下になったらリセットされる
 BIRD_STUCK_RESET_TIME = 500 # 弾が空中で停止したとみなしてリセットするまでの時間 (ミリ秒)
 BIRD_CALL_TIMEOUT = 2000 # 弾を呼び戻せるようになるまでの時間 (ミリ秒)
+
+# 画面端でのバウンド設定 (実験用)
+ENABLE_SIDE_WALL_BOUNCE = True # Trueにすると画面の左右の壁でボールがバウンドする
+SIDE_WALL_BOUNCINESS = 0.8 # 画面端での反発係数
+SIDE_WALL_DAMAGE = 50 # 画面端の壁に衝突した際に受けるダメージ
+
 GROUND_COLLISION_SAFE_TIME = 500 # 発射後に地面との衝突判定が有効になるまでの時間 (ミリ秒)
 TOWER_COLLISION_SAFE_TIME = 500 # 発射後に塔との衝突判定が有効になるまでの時間 (ミリ秒)
 
@@ -147,11 +154,11 @@ CLOUD_ANIMATION_MIN_SCALE = 0.8 # 衝突時に縮む最小スケール
 
 # 雲の生成設定
 CLOUD_MIN_COUNT = 5 # 生成される雲の最小数
-CLOUD_MAX_COUNT = 8 # 生成される雲の最大数
-CLOUD_MIN_DISTANCE_X = 200 # 生成される雲同士の最低距離 (X軸方向)
-CLOUD_MIN_DISTANCE_Y = 250 # 生成される雲同士の最低距離 (Y軸方向)
+CLOUD_MAX_COUNT = 7 # 生成される雲の最大数
+CLOUD_MIN_DISTANCE_X = 250 # 生成される雲同士の最低距離 (X軸方向)
+CLOUD_MIN_DISTANCE_Y = 200 # 生成される雲同士の最低距離 (Y軸方向)
 CLOUD_SPAWN_PADDING_X = 100 # 画面の左右の端から雲が生成されるまでの最低距離
-CLOUD_SPAWN_Y_MIN = 100  # 雲が生成されるY座標の上限（画面上部）
+CLOUD_SPAWN_Y_MIN = 150  # 雲が生成されるY座標の上限（画面上部）
 CLOUD_SPAWN_Y_MAX = 450 # 雲が生成されるY座標の下限（画面下部）
 CLOUD_MIN_DISTANCE_FROM_TOWER = 300 # 塔から雲が生成されるまでの最低距離（円範囲）
 
@@ -190,6 +197,18 @@ SCORE_INDICATOR_FONT_SIZE = 64
 SCORE_INDICATOR_OUTLINE_COLOR = BLACK
 SCORE_INDICATOR_OUTLINE_WIDTH = 2
 
+# スコア計算設定
+SCORE_BASE_POINTS = {
+    "enemy": 100,             # 通常の敵を倒した時の基本点
+    "boss_weak_point": 250,   # ボスの弱点にヒットした時の基本点
+}
+SCORE_COMBO_LINEAR_BONUS = 20 # コンボ数ごとの線形ボーナス (例: 2コンボなら+20, 3コンボなら+40)
+SCORE_COMBO_TIER_BONUS = {    # コンボ数に応じた段階的ボーナス
+    5: 50,   # 5コンボ以上で+100
+    10: 100,  # 10コンボ以上で+300
+    20: 300, # 20コンボ以上で+1000
+}
+
 
 # ボス戦UI設定
 BOSS_UI_TITLE_COLOR = (255, 87, 34) # ボスタイトルの色 (Deep Orange)
@@ -213,7 +232,7 @@ WEAK_POINT_CLOSED_LINE_WIDTH = 4 # 閉じた瞼の線の太さ
 BOSS_WEAK_POINT_OFFSET = 5 # ボスの縁から弱点が内側にめり込む距離
 
 # 3つ目のボスの弱点設定
-WEAK_POINT_SWITCH_INTERVAL = 5000 # 弱点が切り替わる間隔 (ms)。短いほど難易度が上がる。
+WEAK_POINT_SWITCH_INTERVAL = 8000 # 弱点が切り替わる間隔 (ms)。短いほど難易度が上がる。
 BOSS_KNOCKBACK_FORCE = 20.0 # ボスが弱点に攻撃を受けた際のノックバックの基本強度。大きいほど後ろに下がる。
 BOSS_SCALE_REDUCTION_ON_HIT = 0.1 # 弱点に1回ヒットした際の縮小率。大きいほど早く小さくなる。
 BOSS_MIN_SCALE = 0.2 # ボスの最小スケール。これ以上は小さくならない。
@@ -225,6 +244,7 @@ BOSS_MAX_HP = 500
 BOSS_BASE_SPEED = 0.1
 BOSS_SPEED_SCALE_MULTIPLIER = 5.0 # スケール減少に応じた速度上昇の倍率。1.0なら線形に増加、2.0ならより急激に増加。
 BOSS_ATTACK_POWER = 300 # ボスの攻撃力
+BOSS_BODY_CONTACT_DAMAGE_TO_BIRD = 100 # ボス本体にボールが接触した際にボールが受けるダメージ
 
 # ボスの天使の輪の設定
 BOSS_HALO_OFFSET_Y = -80 # ボスのてっぺんからのYオフセット
@@ -246,7 +266,7 @@ ENEMY_SPAWN_OFFSET_X = 20 # 画面右端からどれだけ離れて出現する�
 ENEMY_MIN_SIZE = 40 # 敵の最小サイズ
 ENEMY_MAX_SIZE = 120 # 敵の最大サイズ
 ENEMY_HP_MULTIPLIER = 2 # サイズに対するHPの倍率
-ENEMY_SPEED_BASE = 60 # 敵の基本速度（この値をサイズで割る）
+ENEMY_SPEED_BASE = 40 # 敵の基本速度（この値をサイズで割る）
 ENEMY_MIN_SPEED = 0.1 # 敵の最低移動速度
 ENEMY_ATTACK_MULTIPLIER = 1.5 # サイズに対する攻撃力の倍率
 ENEMY_BOUNCINESS = 0.75 # 敵に当たった時の弾の反発係数
@@ -279,7 +299,7 @@ FLYING_ENEMY_ROTATION_SPEED = 3.0 # 敵が向きを変える速さ（度/フレ�
 FLYING_ENEMY_MIN_SIZE = 40
 FLYING_ENEMY_MAX_SIZE = 100
 FLYING_ENEMY_HP_MULTIPLIER = 1.5
-FLYING_ENEMY_SPEED_BASE = 40
+FLYING_ENEMY_SPEED_BASE = 30
 FLYING_ENEMY_MIN_SPEED = 0.1
 FLYING_ENEMY_ATTACK_MULTIPLIER = 1.5
 FLYING_ENEMY_COLOR = (156, 39, 176) # 紫色
@@ -343,3 +363,4 @@ HIT_PARTICLE_COLORS_ENEMY = [(255, 82, 82), (183, 28, 28)] # 赤系
 HIT_PARTICLE_COLORS_TOWER = [(200, 200, 200), (150, 150, 150)] # 白/灰色系
 HIT_PARTICLE_COLORS_BOSS_BODY = [(120, 120, 120), (150, 150, 150)] # ボス本体用の灰色系
 HIT_PARTICLE_COLORS_WEAK_POINT = [(0, 255, 255), (179, 229, 252)] # シアン/ライトブルー系
+HIT_PARTICLE_COLORS_WALL = [(100, 100, 255), (150, 150, 255)] # 壁用の青系

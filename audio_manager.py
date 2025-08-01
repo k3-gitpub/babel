@@ -6,8 +6,9 @@ class AudioManager:
     """
     BGMの再生、切り替え、停止を管理するクラス。
     """
-    def __init__(self):
+    def __init__(self, initial_enabled=True):
         """AudioManagerを初期化する。"""
+        self.enabled = initial_enabled # サウンドが有効かどうかのフラグ
         self.current_bgm_type = None
         self.bgm_paths = {
             "normal": config.BGM_NORMAL_PATH,
@@ -81,12 +82,23 @@ class AudioManager:
         pygame.mixer.music.set_volume(config.BGM_VOLUME)
         self.scale_index = 0
 
+    def toggle_enabled(self):
+        """サウンドの有効/無効を切り替える。"""
+        self.enabled = not self.enabled
+        print(f"Sound enabled: {self.enabled}")
+        # サウンドが無効になったら、再生中のBGMを止める
+        if not self.enabled:
+            self.stop_music()
+
     def _play_music(self, bgm_type: str):
         """
         指定されたタイプのBGMを再生する。
         :param bgm_type: "normal" または "boss"
         """
-        # すでに同じBGMが再生中、またはファイルが存在しない場合は何もしない
+        # サウンドが無効な場合は再生しない
+        if not self.enabled:
+            return
+        # すでに同じBGMが再生中、またはファイルが存在しない場合は何もしない        
         if self.current_bgm_type == bgm_type:
             return
         # 再生しようとしているBGMファイルが存在しない場合は、現在のBGMを止めずに処理を中断
@@ -108,7 +120,7 @@ class AudioManager:
 
     def play_scale_sound(self):
         """現在の音階のSEを再生し、次の音階に進める。"""
-        if not self.scale_sounds:
+        if not self.enabled or not self.scale_sounds:
             return
 
         # 現在のインデックスのサウンドを再生
@@ -120,27 +132,27 @@ class AudioManager:
 
     def play_enemy_death_sound(self):
         """敵の死亡SEを再生する。"""
-        if self.enemy_death_sound:
+        if self.enabled and self.enemy_death_sound:
             self.enemy_death_sound.play()
 
     def play_tower_damage_sound(self):
         """タワーのダメージSEを再生する。"""
-        if self.tower_damage_sound:
+        if self.enabled and self.tower_damage_sound:
             self.tower_damage_sound.play()
 
     def play_heart_collect_sound(self):
         """ハート取得SEを再生する。"""
-        if self.heart_collect_sound:
+        if self.enabled and self.heart_collect_sound:
             self.heart_collect_sound.play()
 
     def play_stage_start_sound(self):
         """ステージ開始SEを再生する。"""
-        if self.stage_start_sound:
+        if self.enabled and self.stage_start_sound:
             self.stage_start_sound.play()
 
     def play_ui_click_sound(self):
         """UIクリックSEを再生する。"""
-        if self.ui_click_sound:
+        if self.enabled and self.ui_click_sound:
             self.ui_click_sound.play()
 
     def reset_scale(self):
