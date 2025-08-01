@@ -102,6 +102,7 @@ class Game:
 
         # ゲームループに関わる状態もここでリセットする
         self.is_dragging = False
+        self.drag_start_pos = None # ドラッグ開始位置を記録
         self.is_game_over_processed = False # ゲームオーバー処理が完了したかのフラグ
         self.trajectory_points = []
         self.mouse_pos = pygame.math.Vector2(0, 0)
@@ -171,13 +172,14 @@ class Game:
                         self.game_logic_manager.is_bird_callable = False
                         self.last_activity_time = pygame.time.get_ticks()
                         print("Bird recalled manually.")
-                    # ボールをドラッグ開始
+                    # 画面のどこかをタッチしてドラッグ開始
                     elif not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
-                        if self.bird.is_clicked(pos):
-                            self.is_dragging = True
-                            self.mouse_pos.x, self.mouse_pos.y = pos
-                            self.show_drag_indicator = False
-                            self.last_activity_time = pygame.time.get_ticks()
+                        # is_clicked の条件を削除し、UI以外の場所ならドラッグ開始
+                        self.is_dragging = True
+                        self.drag_start_pos = pygame.math.Vector2(pos) # タッチ開始点を記録
+                        self.mouse_pos.x, self.mouse_pos.y = pos # 現在のタッチ位置も更新
+                        self.show_drag_indicator = False
+                        self.last_activity_time = pygame.time.get_ticks()
 
                 # 2. ドラッグ中の移動処理
                 if self.is_dragging and (event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION):
@@ -237,14 +239,16 @@ class Game:
             self.slingshot_pos.y = self.tower.get_top_y() + config.SLINGSHOT_OFFSET_Y
 
             if self.is_dragging:
-                self.bird.pos = self.mouse_pos.copy()
+                # ドラッグ開始点からのベクトルを計算
+                drag_vector = self.mouse_pos - self.drag_start_pos
+                # スリングショットの位置に、ドラッグベクトルを加算してボールを配置（直感的な引っ張り操作）
+                self.bird.pos = self.slingshot_pos + drag_vector
+
                 distance = self.slingshot_pos.distance_to(self.bird.pos)
                 if distance > config.MAX_PULL_DISTANCE:
                     if distance > 0:
                         direction = (self.bird.pos - self.slingshot_pos).normalize()
                         self.bird.pos = self.slingshot_pos + direction * config.MAX_PULL_DISTANCE
-                    else:
-                        self.bird.pos = self.slingshot_pos.copy()
             elif self.bird.is_flying:
                 self.bird.update()
             else:
