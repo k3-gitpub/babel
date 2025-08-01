@@ -13,6 +13,8 @@ from ground import Ground
 from enemy import Enemy
 from tower import Tower
 from heart_item import HeartItem
+from speed_up_item import SpeedUpItem
+from size_up_item import SizeUpItem
 from flying_enemy import FlyingEnemy
 from game_logic import GameLogicManager, calculate_trajectory
 from ui import UIManager
@@ -92,12 +94,15 @@ class Game:
         self._setup_level(self.initial_tower_top_y)
 
         self.heart_items = []
+        self.speed_up_items = []
+        self.size_up_items = []
         self.particles = []
         self.slingshot_pos = pygame.math.Vector2(self.slingshot_x, self.tower.get_top_y() + config.SLINGSHOT_OFFSET_Y)
 
         self.game_logic_manager = GameLogicManager(
             self.bird, self.tower, self.clouds, self.ground, self.enemies,
-            self.heart_items, self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
+            self.heart_items, self.speed_up_items, self.size_up_items,
+            self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
             play_start_sound=play_start_sound
         )
 
@@ -258,6 +263,8 @@ class Game:
                 self.bird.start_pos = self.slingshot_pos.copy()
 
             for heart in self.heart_items: heart.update()
+            for item in self.speed_up_items: item.update()
+            for item in self.size_up_items: item.update()
             for p in self.particles: p.update()
             for enemy in self.enemies:
                 if isinstance(enemy, FlyingEnemy):
@@ -357,6 +364,8 @@ class Game:
             # --- ゲームプレイ中のオブジェクト描画 ---
             for enemy in self.enemies: enemy.draw(self.screen)
             for heart in self.heart_items: heart.draw(self.screen)
+            for item in self.speed_up_items: item.draw(self.screen)
+            for item in self.size_up_items: item.draw(self.screen)
             for p in self.particles: p.draw(self.screen)
 
             if self.is_dragging:
@@ -405,6 +414,8 @@ class Game:
                 self.game_logic_manager.stage_manager.current_stage,
                 self.game_logic_manager.max_combo_count,
                 self.game_logic_manager.current_score,
+                self.game_logic_manager.combo_gauge,
+                config.COMBO_GAUGE_MAX,
                 boss=boss,
                 boss_name=boss_name
             )

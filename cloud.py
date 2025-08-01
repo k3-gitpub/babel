@@ -38,6 +38,9 @@ class Cloud:
         # 浮遊アニメーション用のタイマー。各インスタンスで異なる動きになるよう、開始値をランダムにする
         self.float_animation_timer = random.uniform(0, 2 * math.pi)
 
+        # アイテムが乗っているかどうかのフラグ
+        self.has_item = False
+
         # 描画と当たり判定に使うpuffsリストを初期化
         self.puffs = []
         self._update_puffs_for_drawing()

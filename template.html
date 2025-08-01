@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        {{PYGBAG_METAS}}
+        <style>
+            /* 基本的なスタイルリセット */
+            body, html {
+                margin: 0;
+                padding: 0;
+                overflow: hidden; /* スクロールバーを非表示に */
+                background-color: #000;
+                color: #fff;
+            }
+            /* canvasを画面全体に広げ、アスペクト比を維持する */
+            canvas#canvas {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                object-fit: contain; /* アスペクト比を保ちつつ画面に収める */
+                image-rendering: -moz-crisp-edges;
+                image-rendering: -webkit-crisp-edges;
+                image-rendering: pixelated;
+                image-rendering: crisp-edges;
+            }
+            /* 全画面表示ボタンのスタイル */
+            #fullscreen-btn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                font-size: 16px;
+                font-family: sans-serif;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: white;
+                border: 1px solid white;
+                border-radius: 8px;
+                cursor: pointer;
+                z-index: 1000; /* canvasより手前に表示 */
+            }
+        </style>
+    </head>
+    <body>
+        <button id="fullscreen-btn" onclick="goFullScreen()">全画面表示</button>
+        <script>
+            function goFullScreen() {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(err => {
+                        console.error(`全画面モードへの移行に失敗しました: ${err.message} (${err.name})`);
+                    });
+                } else if (elem.webkitRequestFullscreen) { /* Safari用 */
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        </script>
+        {{PYGBAG_SCRIPTS}}
+    </body>
+</html>
+

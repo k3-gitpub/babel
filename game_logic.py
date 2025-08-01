@@ -5,6 +5,8 @@ from enemy import Enemy
 from flying_enemy import FlyingEnemy
 from jumping_enemy import JumpingEnemy
 from heart_item import HeartItem
+from speed_up_item import SpeedUpItem
+from size_up_item import SizeUpItem
 from particle import Particle
 from stage_manager import StageManager
 from boss_enemy import BossEnemy
@@ -38,7 +40,7 @@ class GameLogicManager:
     """
     ゲームのロジック（衝突判定、エンティティ生成、状態遷移など）を管理するクラス。
     """
-    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, particles, slingshot_pos, ui_manager, audio_manager, play_start_sound=True):
+    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, speed_up_items, size_up_items, particles, slingshot_pos, ui_manager, audio_manager, play_start_sound=True):
         # ゲームオブジェクトへの参照を保持
         self.bird = bird
         self.tower = tower
@@ -46,6 +48,8 @@ class GameLogicManager:
         self.ground = ground
         self.enemies = enemies
         self.heart_items = heart_items
+        self.speed_up_items = speed_up_items
+        self.size_up_items = size_up_items
         self.particles = particles
         self.slingshot_pos = slingshot_pos
         self.ui_manager = ui_manager
@@ -60,9 +64,16 @@ class GameLogicManager:
         # 現在のプレイのスコアを記録
         self.current_score = 0
 
+        # コンボゲージ
+        self.combo_gauge = 0
+
         # ゲームクリア時のボーナス関連
         self.final_block_count = 0
         self.tower_bonus_score = 0
+
+        # ゲージ満タン演出とアイテム出現のタイミング管理
+        self.gauge_max_effect_active = False
+        self.item_spawn_timer = 0
 
         # ゲームの状態とタイマーを初期化
         self.reset_level_state(play_sound=play_start_sound)
@@ -77,6 +88,22 @@ class GameLogicManager:
     def update(self):
         """ゲームロジック全体を更新する。メインループから毎フレーム呼ばれる。"""
         self._check_game_over()
+
+        # --- コンボゲージ満タン時の処理 ---
+        # 1. ゲージが満タンになった瞬間の処理
+        if self.stage_state == "PLAYING" and self.combo_gauge >= config.COMBO_GAUGE_MAX and not self.gauge_max_effect_active:
+            self.gauge_max_effect_active = True
+            # 演出のトリガーを引く
+            if self.ui_manager: self.ui_manager.start_gauge_flash_effect()
+            if self.audio_manager: self.audio_manager.play_gauge_max_sound()
+            # アイテム出現までのタイマーをセット (演出時間 + 追加の遅延)
+            self.item_spawn_timer = pygame.time.get_ticks() + config.COMBO_GAUGE_FLASH_DURATION + config.ITEM_SPAWN_DELAY_AFTER_GAUGE_MAX
+
+        # 2. アイテム出現タイマーが満了したら、アイテムを出現させる
+        if self.gauge_max_effect_active and self.item_spawn_timer > 0 and pygame.time.get_ticks() >= self.item_spawn_timer:
+            self._spawn_item_from_gauge()
+            self.gauge_max_effect_active = False # 処理完了
+            self.item_spawn_timer = 0 # タイマーをリセット
 
         if self.stage_state == "PLAYING":
             self._spawn_entities()
@@ -102,17 +129,17 @@ class GameLogicManager:
         self.stage_state = "PLAYING"
         self.enemies_defeated_count = 0
         self.boss_spawned = False
-
+        self.combo_gauge = 0 # ステージ開始時にゲージもリセット
+        self.gauge_max_effect_active = False # 演出フラグもリセット
+        self.item_spawn_timer = 0
         # ステージ開始SEを再生
         if play_sound and self.audio_manager:
             self.audio_manager.play_stage_start_sound()
 
-        # 現在のステージ設定に基づいてタイマーをリセット
+        # 敵の出現タイマーのみリセット
         settings = self.stage_manager.get_current_stage_settings()
         spawn_interval = settings.get("enemy_spawn_interval", config.ENEMY_SPAWN_INTERVAL)
-
         self.last_enemy_spawn_time = pygame.time.get_ticks() - (spawn_interval - config.FIRST_ENEMY_SPAWN_DELAY)
-        self.next_heart_spawn_time = self._calculate_next_heart_spawn_time(pygame.time.get_ticks())
 
     def _check_game_over(self):
         """ゲームオーバー条件をチェックする。"""
@@ -163,15 +190,6 @@ class GameLogicManager:
                 self.enemies.append(BossEnemy(stat_multiplier))
                 self.boss_spawned = True
 
-        # ハートアイテムの出現処理 (動的・ランダム間隔)
-        if current_time >= self.next_heart_spawn_time:
-            if self.clouds:
-                chosen_cloud = random.choice(self.clouds)
-                self.heart_items.append(HeartItem(chosen_cloud))
-                # 次の出現時間を計算してセット
-                self.next_heart_spawn_time = self._calculate_next_heart_spawn_time(current_time)
-                print(f"ハートアイテムが出現！ 次回出現まで約{((self.next_heart_spawn_time - current_time)/1000):.1f}秒")
-
         # 敵の出現間隔をステージ設定から取得
         enemy_spawn_interval = settings.get("enemy_spawn_interval", config.ENEMY_SPAWN_INTERVAL)
         # 敵の出現処理
@@ -202,6 +220,54 @@ class GameLogicManager:
                 self.enemies.append(JumpingEnemy(stat_multiplier))
                 print("ジャンプする敵が出現！")
 
+    def _increase_combo_gauge(self):
+        """コンボ数に応じてゲージを増加させる。"""
+        increase_amount = config.COMBO_GAUGE_INCREASE_BASE + (self.bird.combo_count * config.COMBO_GAUGE_INCREASE_PER_COMBO)
+        self.combo_gauge += increase_amount
+        self.combo_gauge = min(self.combo_gauge, config.COMBO_GAUGE_MAX)
+        # print(f"ゲージ増加: +{increase_amount:.0f} -> 現在のゲージ: {self.combo_gauge:.0f}/{config.COMBO_GAUGE_MAX}") # デバッグ用
+
+    def _spawn_item_from_gauge(self):
+        """コンボゲージが満タンになった時にアイテムを抽選・出現させる。"""
+        # アイテムの抽選
+        item_types = list(config.ITEM_SPAWN_CHANCES.keys())
+        weights = list(config.ITEM_SPAWN_CHANCES.values())
+        chosen_item_type = random.choices(item_types, weights=weights, k=1)[0]
+        print(f"ゲージ満タン！ アイテム抽選結果: {chosen_item_type}")
+
+        # アイテムが乗っていない雲を探す
+        available_clouds = [cloud for cloud in self.clouds if not cloud.has_item]
+
+        if available_clouds:
+            # 空いている雲があれば、その上に乗せる
+            chosen_cloud = random.choice(available_clouds)
+            chosen_cloud.has_item = True # 雲にアイテムが乗ったことを記録
+            if self.audio_manager: self.audio_manager.play_item_spawn_sound()
+            print(f"アイテムを雲の上に出現させます。")
+            if chosen_item_type == "heart":
+                self.heart_items.append(HeartItem(parent_cloud=chosen_cloud))
+            elif chosen_item_type == "speed_up":
+                self.speed_up_items.append(SpeedUpItem(parent_cloud=chosen_cloud))
+            elif chosen_item_type == "size_up":
+                self.size_up_items.append(SizeUpItem(parent_cloud=chosen_cloud))
+        else:
+            # 空いている雲がなければ、空中に直接配置
+            print("アイテムを空中に出現させます。")
+            if self.audio_manager: self.audio_manager.play_item_spawn_sound()
+            spawn_x = random.uniform(config.AIR_ITEM_SPAWN_X_MIN, config.AIR_ITEM_SPAWN_X_MAX)
+            spawn_y = random.uniform(config.AIR_ITEM_SPAWN_Y_MIN, config.AIR_ITEM_SPAWN_Y_MAX)
+            air_position = pygame.math.Vector2(spawn_x, spawn_y)
+
+            if chosen_item_type == "heart":
+                self.heart_items.append(HeartItem(position=air_position))
+            elif chosen_item_type == "speed_up":
+                self.speed_up_items.append(SpeedUpItem(position=air_position))
+            elif chosen_item_type == "size_up":
+                self.size_up_items.append(SizeUpItem(position=air_position))
+
+        # ゲージをリセット
+        self.combo_gauge = 0
+
     def _handle_collisions(self):
         """全ての衝突判定を処理する。"""
         self._handle_enemy_tower_collision()
@@ -210,6 +276,8 @@ class GameLogicManager:
             self._handle_bird_cloud_collision()
             self._handle_bird_tower_collision()
             self._handle_bird_heart_collision()
+            self._handle_bird_speed_up_collision()
+            self._handle_bird_size_up_collision()
             self._handle_bird_enemy_collision()
             self._handle_bird_ground_collision()
 
@@ -314,6 +382,7 @@ class GameLogicManager:
                 # --- UI表示の呼び出し ---
                 if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                     self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                self._increase_combo_gauge()
 
                 if self.audio_manager: self.audio_manager.play_combo_sound()
                 self.bird.bounce_off_cloud(collided_puff_info)
@@ -334,6 +403,7 @@ class GameLogicManager:
                         # --- UI表示の呼び出し ---
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                        self._increase_combo_gauge()
 
                         if self.audio_manager: self.audio_manager.play_combo_sound()
                         self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_TOWER)
@@ -349,9 +419,43 @@ class GameLogicManager:
                 if self.tower.repair_one_block():
                     if self.audio_manager: self.audio_manager.play_heart_collect_sound()
                     self._spawn_particles(heart.pos, config.PARTICLE_COUNT_ON_HEART_COLLECT, config.PARTICLE_LIFETIME, config.PARTICLE_MIN_SPEED, config.PARTICLE_MAX_SPEED, config.PARTICLE_GRAVITY, config.PARTICLE_START_SIZE, config.PARTICLE_END_SIZE, config.PARTICLE_COLORS)
+                    if heart.parent_cloud:
+                        heart.parent_cloud.has_item = False # 雲のフラグをリセット
                     del self.heart_items[i]
                     self.bird.power_up()
                     break
+
+    def _handle_bird_speed_up_collision(self):
+        """バードとスピードアップアイテムの衝突を処理する。"""
+        for i in range(len(self.speed_up_items) - 1, -1, -1):
+            item = self.speed_up_items[i]
+            if item.collide_with_bird(self.bird):
+                print("スピードアップアイテムを獲得！")
+                self.bird.apply_speed_boost()
+                if self.audio_manager: self.audio_manager.play_speed_up_collect_sound()
+                self._spawn_particles(item.pos, config.PARTICLE_COUNT_ON_HEART_COLLECT, config.PARTICLE_LIFETIME, config.PARTICLE_MIN_SPEED, config.PARTICLE_MAX_SPEED, config.PARTICLE_GRAVITY, config.PARTICLE_START_SIZE, config.PARTICLE_END_SIZE, config.PARTICLE_COLORS)
+                if item.parent_cloud:
+                    item.parent_cloud.has_item = False # 雲のフラグをリセット
+                del self.speed_up_items[i]
+                # スピードアップはコンボにはならないが、パワーアップはする
+                self.bird.power_up()
+                break
+
+    def _handle_bird_size_up_collision(self):
+        """バードと巨大化アイテムの衝突を処理する。"""
+        for i in range(len(self.size_up_items) - 1, -1, -1):
+            item = self.size_up_items[i]
+            if item.collide_with_bird(self.bird):
+                print("巨大化アイテムを獲得！")
+                self.bird.apply_size_boost()
+                if self.audio_manager: self.audio_manager.play_size_up_collect_sound()
+                self._spawn_particles(item.pos, config.PARTICLE_COUNT_ON_HEART_COLLECT, config.PARTICLE_LIFETIME, config.PARTICLE_MIN_SPEED, config.PARTICLE_MAX_SPEED, config.PARTICLE_GRAVITY, config.PARTICLE_START_SIZE, config.PARTICLE_END_SIZE, config.PARTICLE_COLORS)
+                if item.parent_cloud:
+                    item.parent_cloud.has_item = False # 雲のフラグをリセット
+                del self.size_up_items[i]
+                # 巨大化もコンボにはならないが、パワーアップはする
+                self.bird.power_up()
+                break
 
     def _handle_bird_enemy_collision(self):
         for enemy in reversed(self.enemies):
@@ -369,6 +473,7 @@ class GameLogicManager:
                         # --- UI表示の呼び出し ---
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                        self._increase_combo_gauge()
                         # コンボ音と、弱点ヒットSE（死亡SEを流用）を両方再生する
                         if self.audio_manager:
                             self.audio_manager.play_combo_sound()
@@ -427,6 +532,7 @@ class GameLogicManager:
                     # --- UI表示の呼び出し ---
                     if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                         self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
+                    self._increase_combo_gauge()
                     if self.audio_manager: self.audio_manager.play_combo_sound()
                     self._spawn_particles(self.bird.pos, config.HIT_PARTICLE_COUNT, config.HIT_PARTICLE_LIFETIME, config.HIT_PARTICLE_MIN_SPEED, config.HIT_PARTICLE_MAX_SPEED, config.HIT_PARTICLE_GRAVITY, config.HIT_PARTICLE_START_SIZE, config.HIT_PARTICLE_END_SIZE, config.HIT_PARTICLE_COLORS_ENEMY)
 
@@ -555,6 +661,8 @@ class GameLogicManager:
         # 前のステージのエンティティをクリア
         self.enemies.clear()
         self.heart_items.clear()
+        self.speed_up_items.clear()
+        self.size_up_items.clear()
         self.particles.clear()
 
         # バードをリセット
@@ -571,23 +679,6 @@ class GameLogicManager:
 
         self.clouds.clear()
         self.clouds.extend(new_clouds)
-
-    def _calculate_next_heart_spawn_time(self, current_time):
-        """ステージ設定に基づき、次のハート出現時間を計算して返す。"""
-        settings = self.stage_manager.get_current_stage_settings()
-        # フォールバック用のデフォルト設定
-        default_heart_settings = {"base": 10000, "random": 2000}
-        heart_settings = settings.get("heart_spawn", default_heart_settings)
-
-        base_interval = heart_settings.get("base", default_heart_settings["base"])
-        random_range = heart_settings.get("random", default_heart_settings["random"])
-
-        # random_rangeが0の場合はオフセットを0にする
-        random_offset = random.uniform(-random_range, random_range) if random_range > 0 else 0
-        
-        interval = base_interval + random_offset
-        # 負の間隔にならないように、0より大きいことを保証する
-        return current_time + max(0, interval)
 
     def _spawn_particles(self, pos, count, lifetime, min_speed, max_speed, gravity, start_size, end_size, colors):
         """指定された設定でパーティクルを生成し、リストに追加する。"""
@@ -668,6 +759,8 @@ class GameLogicManager:
             self.reset_level_state() # stage_stateをPLAYINGに戻す
             self.enemies.clear()
             self.heart_items.clear()
+            self.speed_up_items.clear()
+            self.size_up_items.clear()
             self.particles.clear()
             if self.audio_manager: self.audio_manager.reset_scale()
             self.bird.reset(self.slingshot_pos)
