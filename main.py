@@ -18,12 +18,23 @@ from game_logic import GameLogicManager, calculate_trajectory
 from ui import UIManager
 from level_utils import create_cloud_layout
 from scene_title import TitleScene
+from audio_manager import AudioManager
+from data_manager import DataManager
 
 class Game:
     """ゲーム全体を管理するクラス"""
     def __init__(self):
         """ゲームの初期化"""
         pygame.init()
+        # mixerの初期化。Webアプリ化で失敗することがあるため、try-exceptで囲む
+        try:
+            pygame.mixer.init()
+            print("Pygame mixer initialized successfully.")
+            self.mixer_initialized = True
+        except pygame.error as e:
+            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
+            self.mixer_initialized = False
+
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Babel's Tower Shooter")
         self.clock = pygame.time.Clock()
@@ -33,19 +44,33 @@ class Game:
         title_font = pygame.font.Font(None, 120)
         boss_font = pygame.font.Font(None, config.BOSS_NAME_FONT_SIZE)
         combo_font = pygame.font.Font(None, config.COMBO_TEXT_FONT_SIZE)
+        result_font = pygame.font.Font(None, 40)
 
         # UIマネージャーのインスタンスを作成
-        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font)
+        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font, result_font)
+
+        # データマネージャーのインスタンスを作成し、ハイスコアを読み込む
+        self.data_manager = DataManager()
+        save_data = self.data_manager.load_data()
+        self.high_score = save_data.get("high_score", 0)
+        self.best_combo = save_data.get("best_combo", 0)
+        sound_enabled = save_data.get("sound_enabled", True)
+
+        # オーディオマネージャーのインスタンスを作成
+        if self.mixer_initialized:
+            self.audio_manager = AudioManager(initial_enabled=sound_enabled)
+        else:
+            self.audio_manager = None
 
         # スリングショットのX座標と、タワーの初期の高さを定義
         self.slingshot_x = config.SLINGSHOT_X
         self.initial_tower_top_y = config.GROUND_Y - (config.TOWER_INITIAL_BLOCKS * config.TOWER_BLOCK_HEIGHT)
 
         # シーンのインスタンスを作成
-        self.title_scene = TitleScene(self.ui_manager)
+        self.title_scene = TitleScene(self.ui_manager, self.audio_manager)
 
         # ゲームの状態をリセットして初期化
-        self._reset_game()  # ゲームオブジェクトを先に初期化
+        self._reset_game(play_start_sound=False)  # ゲームオブジェクトを先に初期化（初回は音を鳴らさない）
         self.game_state = "TITLE"  # ゲームの初期状態を「タイトル」に設定
 
     def _setup_level(self, tower_top_y):
@@ -59,7 +84,7 @@ class Game:
         self.ground = Ground()
         self.enemies = []
 
-    def _reset_game(self):
+    def _reset_game(self, play_start_sound=True):
         """
         ゲームを初期化またはリセットし、すべてのオブジェクトとマネージャーをセットアップする。
         """
@@ -71,11 +96,13 @@ class Game:
 
         self.game_logic_manager = GameLogicManager(
             self.bird, self.tower, self.clouds, self.ground, self.enemies,
-            self.heart_items, self.particles, self.slingshot_pos, self.ui_manager
+            self.heart_items, self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
+            play_start_sound=play_start_sound
         )
 
         # ゲームループに関わる状態もここでリセットする
         self.is_dragging = False
+        self.is_game_over_processed = False # ゲームオーバー処理が完了したかのフラグ
         self.trajectory_points = []
         self.mouse_pos = pygame.math.Vector2(0, 0)
         self.recall_button_rect = None
@@ -84,6 +111,8 @@ class Game:
         self.show_drag_indicator = True
         self.last_activity_time = pygame.time.get_ticks()
         self.was_bird_flying = False
+        if self.audio_manager:
+            self.audio_manager.reset_scale()
         self.game_state = "PLAYING"  # ゲームをリセットしたら、状態を「プレイ中」にする
 
     def _handle_events(self):
@@ -95,48 +124,78 @@ class Game:
             if self.game_state == "TITLE":
                 action = self.title_scene.process_event(event)
                 if action == "START_GAME":
-                    self._reset_game()
+                    self._reset_game(play_start_sound=True)
+                elif action == "TOGGLE_SOUND":
+                    # サウンド設定が変更されたら、現在の設定を保存する
+                    self._save_current_settings()
+
 
             elif self.game_state == "PLAYING":
                 # キーボード入力
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
                         if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"] or config.DEBUG:
-                            self._reset_game()
+                            self._reset_game(play_start_sound=True)
                             print("--- Level Restarted ---")
                     
                     if config.DEBUG:
                         if pygame.K_1 <= event.key <= pygame.K_9:
                             stage_num = event.key - pygame.K_0
                             self.game_logic_manager.jump_to_stage(stage_num)
+                        if event.key == pygame.K_c:
+                            print("--- Clearing save data (High Score & Best Combo) ---")
+                            self.high_score = 0
+                            self.best_combo = 0
+                            self._save_current_settings()
                 
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if self.recall_button_rect and self.recall_button_rect.collidepoint(event.pos):
+                # ゲームオーバー/クリア時のボタン入力
+                if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"]:
+                    if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1) or event.type == pygame.FINGERDOWN:
+                        pos = event.pos if event.type == pygame.MOUSEBUTTONDOWN else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                        # リスタートボタンがクリックされたか判定
+                        if self.ui_manager.end_screen.restart_button_rect.collidepoint(pos):
+                            if self.audio_manager: self.audio_manager.play_ui_click_sound()
+                            self._reset_game(play_start_sound=True)
+                            print("--- Level Restarted via Button ---")
+                
+                # --- マウス・タッチ入力の統合 ---
+                
+                # 1. プレスダウン処理
+                if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1) or event.type == pygame.FINGERDOWN:
+                    pos = event.pos if event.type == pygame.MOUSEBUTTONDOWN else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                    
+                    # リコールボタンの判定
+                    if self.recall_button_rect and self.recall_button_rect.collidepoint(pos):
+                        if self.audio_manager: self.audio_manager.reset_scale()
                         self.bird.reset(self.slingshot_pos)
                         self.game_logic_manager.is_bird_callable = False
                         self.last_activity_time = pygame.time.get_ticks()
                         print("Bird recalled manually.")
-
-                # マウス入力
-                if not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1 and self.bird.is_clicked(event.pos):
+                    # ボールをドラッグ開始
+                    elif not self.bird.is_flying and self.game_logic_manager.stage_state == "PLAYING":
+                        if self.bird.is_clicked(pos):
                             self.is_dragging = True
-                            self.mouse_pos.x, self.mouse_pos.y = event.pos
+                            self.mouse_pos.x, self.mouse_pos.y = pos
                             self.show_drag_indicator = False
                             self.last_activity_time = pygame.time.get_ticks()
-                    
-                    if event.type == pygame.MOUSEMOTION:
-                        if self.is_dragging:
-                            self.mouse_pos.x, self.mouse_pos.y = event.pos
 
-                    if event.type == pygame.MOUSEBUTTONUP:
-                        if event.button == 1 and self.is_dragging:
-                            self.is_dragging = False
-                            launch_vector = self.slingshot_pos - self.bird.pos
-                            self.bird.launch(launch_vector)
-                            self.last_activity_time = pygame.time.get_ticks()
-                            self.trajectory_points.clear()
+                # 2. ドラッグ中の移動処理
+                if self.is_dragging and (event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION):
+                    pos = event.pos if event.type == pygame.MOUSEMOTION else (event.x * config.SCREEN_WIDTH, event.y * config.SCREEN_HEIGHT)
+                    self.mouse_pos.x, self.mouse_pos.y = pos
+
+                # 3. リリース処理
+                if self.is_dragging and ((event.type == pygame.MOUSEBUTTONUP and event.button == 1) or event.type == pygame.FINGERUP):
+                    pull_distance = self.slingshot_pos.distance_to(self.bird.pos)
+                    self.is_dragging = False
+                    if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
+                        launch_vector = self.slingshot_pos - self.bird.pos
+                        self.bird.launch(launch_vector)
+                        self.last_activity_time = pygame.time.get_ticks()
+                    else:
+                        self.bird.cancel_launch()
+                        print("Pull distance too short, launch cancelled.")
+                    self.trajectory_points.clear()
 
     def _update_state(self):
         """状態更新 (Update)"""
@@ -145,11 +204,25 @@ class Game:
         # タイトル画面でも背景が動くように、雲は常に更新
         for cloud in self.clouds: cloud.update()
 
+        # オーディオマネージャーの更新
+        if self.audio_manager:
+            is_boss_stage = False
+            # PLAYING状態の時のみステージ設定を確認
+            if self.game_state == "PLAYING":
+                settings = self.game_logic_manager.stage_manager.get_current_stage_settings()
+                if settings:
+                    is_boss_stage = settings.get("is_boss_stage", False)
+            
+            self.audio_manager.update(self.game_state, is_boss_stage)
+
         if self.game_state == "TITLE":
             # タイトルシーンの状態を更新
             self.title_scene.update()
         elif self.game_state == "PLAYING":
             # --- DRAG表示のロジック ---
+            # UI要素のアニメーションを更新
+            self.ui_manager.update()
+
             # ボールがちょうどリセットされた瞬間を検知
             if self.was_bird_flying and not self.bird.is_flying:
                 self.last_activity_time = current_time
@@ -194,9 +267,52 @@ class Game:
                 current_launch_vector = self.slingshot_pos - self.bird.pos
                 self.trajectory_points = calculate_trajectory(self.bird.pos, current_launch_vector)
 
+            # --- ゲームオーバー/クリア時のスコア記録処理 ---
+            if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"] and not self.is_game_over_processed:
+                self._process_game_over_scores()
+
+    def _process_game_over_scores(self):
+        """ゲームオーバー時にスコアを処理し、ハイスコアを更新・保存する。"""
+        print("ゲームオーバー処理を開始します。")
+        current_score = self.game_logic_manager.current_score
+        max_combo = self.game_logic_manager.max_combo_count
+        
+        record_updated = False
+        if current_score > self.high_score:
+            print(f"ハイスコア更新！ {self.high_score} -> {current_score}")
+            self.high_score = current_score
+            record_updated = True
+        
+        if max_combo > self.best_combo:
+            print(f"ベストコンボ更新！ {self.best_combo} -> {max_combo}")
+            self.best_combo = max_combo
+            record_updated = True
+
+        if record_updated:
+            save_data = {
+                "high_score": self.high_score,
+                "best_combo": self.best_combo
+            }
+            self.data_manager.save_data(save_data)
+        
+        self.is_game_over_processed = True
+
+    def _save_current_settings(self):
+        """現在の設定（ハイスコア、サウンドON/OFFなど）をファイルに保存する。"""
+        if not self.data_manager:
+            return
+        
+        sound_enabled = self.audio_manager.enabled if self.audio_manager else True
+        save_data = {
+            "high_score": self.high_score,
+            "best_combo": self.best_combo,
+            "sound_enabled": sound_enabled
+        }
+        self.data_manager.save_data(save_data)
 
     def _draw_screen(self):
         """描画処理 (Draw)"""
+        mouse_pos = pygame.mouse.get_pos()
         # --- 共通の背景描画 ---
         self.screen.fill(config.BLUE)
         for cloud in self.clouds: cloud.draw(self.screen)
@@ -208,8 +324,15 @@ class Game:
             self.title_scene.draw(self.screen)
 
         elif self.game_state == "PLAYING":
-            # ゲームプレイ中はカーソルを通常に戻す
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            # --- カーソル形状の更新 ---
+            if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"]:
+                is_restart_hovered = self.ui_manager.end_screen.restart_button_rect.collidepoint(mouse_pos)
+                if is_restart_hovered:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                else:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             self.tower.draw(self.screen)
             # --- ゲームプレイ中のオブジェクト描画 ---
             for enemy in self.enemies: enemy.draw(self.screen)
@@ -260,12 +383,21 @@ class Game:
                 self.game_logic_manager.enemies_defeated_count,
                 enemies_to_clear,
                 self.game_logic_manager.stage_manager.current_stage,
+                self.game_logic_manager.max_combo_count,
+                self.game_logic_manager.current_score,
                 boss=boss,
                 boss_name=boss_name
             )
 
             if self.game_logic_manager.stage_state != "PLAYING":
-                self.ui_manager.draw_end_screen(self.game_logic_manager.stage_state)
+                self.ui_manager.draw_end_screen(
+                    self.game_logic_manager.stage_state,
+                    score=self.game_logic_manager.current_score,
+                    high_score=self.high_score,
+                    max_combo=self.game_logic_manager.max_combo_count,
+                    best_combo=self.best_combo,
+                    mouse_pos=mouse_pos
+                )
 
             self.ui_manager.draw_ui_overlays()
 
@@ -279,6 +411,10 @@ class Game:
             pygame.display.flip()
             await asyncio.sleep(0)
             self.clock.tick(config.FPS)
+
+        # ゲームループを抜けたらmixerを終了
+        if self.mixer_initialized:
+            pygame.mixer.quit()
 
 if __name__ == '__main__':
     game = Game()

@@ -19,3 +19,5 @@ dist/
 # IDE / Editor specific
 .vscode/
 .idea/
+note/
+*.md
