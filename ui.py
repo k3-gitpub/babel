@@ -316,12 +316,12 @@ class UIManager:
                 (config.SCREEN_WIDTH - 100, 40), config.BLACK, config.UI_COUNTER_OUTLINE_WIDTH
             )
 
-    def draw_end_screen(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, mouse_pos=(0,0)):
+    def draw_end_screen(self, stage_state, score=0, high_score=0, max_combo=0, best_combo=0, tower_height=0, tower_bonus=0, best_tower_height=0, mouse_pos=(0,0)):
         """
         ステージクリアまたはゲームオーバーの画面を描画する。
         内部でEndScreenクラスのdrawを呼び出す。
         """
-        self.end_screen.draw(stage_state, score, high_score, max_combo, best_combo, mouse_pos)
+        self.end_screen.draw(stage_state, score, high_score, max_combo, best_combo, tower_height, tower_bonus, best_tower_height, mouse_pos)
 
     def draw_recall_button(self, position):
         """

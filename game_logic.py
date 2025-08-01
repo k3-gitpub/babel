@@ -60,6 +60,10 @@ class GameLogicManager:
         # 現在のプレイのスコアを記録
         self.current_score = 0
 
+        # ゲームクリア時のボーナス関連
+        self.final_block_count = 0
+        self.tower_bonus_score = 0
+
         # ゲームの状態とタイマーを初期化
         self.reset_level_state(play_sound=play_start_sound)
 
@@ -527,7 +531,9 @@ class GameLogicManager:
         if not self.stage_manager.advance_stage():
             # 最終ステージをクリアした場合
             self.stage_state = "GAME_WON"
-            print("Congratulations! You have beaten all stages!")
+            # クリア時のブロック数を保存
+            self.final_block_count = len(self.tower.blocks)
+            print(f"Congratulations! You have beaten all stages! Tower height: {self.final_block_count}")
             return
 
         # --- 次のステージの準備 ---
@@ -633,6 +639,15 @@ class GameLogicManager:
         # UIにスコア表示を依頼
         if score_to_add > 0:
             self.ui_manager.add_score_indicator(pygame.math.Vector2(enemy_pos), score_to_add)
+
+    def calculate_and_add_tower_bonus(self):
+        """
+        タワーの高さに応じたボーナススコアを計算し、現在のスコアに加算する。
+        """
+        if self.final_block_count > 0:
+            self.tower_bonus_score = self.final_block_count * config.SCORE_TOWER_BONUS_PER_BLOCK
+            self.current_score += self.tower_bonus_score
+            print(f"タワーボーナス: {self.final_block_count} x {config.SCORE_TOWER_BONUS_PER_BLOCK} = {self.tower_bonus_score}点 が加算されました。")
 
     @property
     def current_boss(self):
