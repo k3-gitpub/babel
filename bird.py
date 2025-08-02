@@ -40,7 +40,7 @@ class Bird:
         if self.radius <= 0: return
 
         surface_size = int(self.radius * 2 + 4)
-        self.original_image = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
+        self.original_image = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA).convert_alpha()
         center = pygame.math.Vector2(surface_size / 2, surface_size / 2)
 
         # 本体を描画
