@@ -31,8 +31,11 @@ class Game:
     """ゲーム全体を管理するクラス"""
     def __init__(self):
         """ゲームの初期化"""
-        pygame.init()
-        self.mixer_initialized = False # オーディオはユーザーの初回入力後に初期化
+        # Webブラウザとの互換性のため、pygame.init()の代わりに個別のモジュールを初期化する
+        # これにより、ユーザーの操作前にオーディオを初期化しようとして失敗するのを防ぐ
+        pygame.display.init()
+        pygame.font.init()
+        self.mixer_initialized = False
 
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Babel's Tower Shooter")
