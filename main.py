@@ -22,6 +22,9 @@ from level_utils import create_cloud_layout
 from scene_title import TitleScene
 from audio_manager import AudioManager
 from data_manager import DataManager
+from asset_manager import AssetManager
+from loading_scene import LoadingScene
+from ui_utils import draw_text
 
 class Game:
     """ゲーム全体を管理するクラス"""
@@ -59,12 +62,16 @@ class Game:
         self.slingshot_x = config.SLINGSHOT_X
         self.initial_tower_top_y = config.GROUND_Y - (config.TOWER_INITIAL_BLOCKS * config.TOWER_BLOCK_HEIGHT)
 
+        # アセットとローディングシーンのインスタンスを作成
+        self.asset_manager = AssetManager()
+        self.loading_scene = LoadingScene(self.ui_manager, self.asset_manager)
+
         # シーンのインスタンスを作成
         self.title_scene = TitleScene(self.ui_manager, None) # audio_managerは後で設定
 
         # ゲームの状態をリセットして初期化
         self._reset_game()  # ゲームオブジェクトを先に初期化
-        self.game_state = "TITLE"  # ゲームの初期状態を「タイトル」に設定
+        self.game_state = "WAITING_FOR_INPUT"  # ゲームの初期状態を「入力待ち」に変更
 
     def _setup_level(self, tower_top_y):
         """
@@ -122,12 +129,14 @@ class Game:
         try:
             pygame.mixer.init()
             self.mixer_initialized = True
-            self.audio_manager = AudioManager(initial_enabled=self.saved_sound_enabled)
+            self.audio_manager = AudioManager(self.asset_manager, initial_enabled=self.saved_sound_enabled)
             self.title_scene.audio_manager = self.audio_manager # TitleSceneにも参照を渡す
             print("Pygame mixer initialized successfully.")
         except pygame.error as e:
             print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
             self.mixer_initialized = False
+            # AssetManagerに音声読み込みをスキップさせる
+            self.asset_manager.disable_sound_loading()
 
     def _handle_events(self):
         """イベント処理 (Input)"""
@@ -135,7 +144,15 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
 
-            if self.game_state == "TITLE":
+            if self.game_state == "WAITING_FOR_INPUT":
+                # どのイベントでも、初回入力であればオーディオを初期化し、ローディングを開始
+                if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
+                    self._initialize_audio()
+                    self.game_state = "LOADING"
+            elif self.game_state == "LOADING":
+                # ローディング中は入力を受け付けない
+                pass
+            elif self.game_state == "TITLE":
                 # どのイベントでも、初回入力であればオーディオを初期化
                 if not self.mixer_initialized and (event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]):
                     self._initialize_audio()
@@ -224,7 +241,15 @@ class Game:
         # タイトル画面でも背景が動くように、雲は常に更新
         for cloud in self.clouds: cloud.update()
 
-        if self.game_state == "TITLE":
+        if self.game_state == "WAITING_FOR_INPUT":
+            # ユーザーの入力を待つ間、背景だけ更新
+            pass
+        elif self.game_state == "LOADING":
+            action = self.loading_scene.update()
+            if action == "LOADING_COMPLETE":
+                print("ローディング完了！タイトル画面へ移行します。")
+                self.game_state = "TITLE"
+        elif self.game_state == "TITLE":
             # タイトルシーンの状態を更新
             self.title_scene.update()
         elif self.game_state == "PLAYING":
@@ -346,7 +371,22 @@ class Game:
         self.ground.draw(self.screen)
 
         # --- 状態に応じた描画の切り替え ---
-        if self.game_state == "TITLE":
+        if self.game_state == "WAITING_FOR_INPUT":
+            # 「クリックして開始」のテキストを点滅描画
+            if (pygame.time.get_ticks() // config.DRAG_TEXT_BLINK_INTERVAL) % 2 == 0:
+                draw_text(
+                    self.screen,
+                    "Click to Start",
+                    self.ui_manager.title_font, # タイトル用の大きなフォント
+                    config.WHITE,
+                    (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2),
+                    config.BLACK,
+                    config.UI_TITLE_OUTLINE_WIDTH
+                )
+        elif self.game_state == "LOADING":
+            # ローディングシーンを描画
+            self.loading_scene.draw(self.screen)
+        elif self.game_state == "TITLE":
             # タイトルシーンは、背景の上に自身のオブジェクト（タワー、ボール、UI）を描画する
             self.title_scene.draw(self.screen)
 
