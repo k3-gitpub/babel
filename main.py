@@ -37,18 +37,48 @@ class Game:
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Babel's Tower Shooter")
         self.clock = pygame.time.Clock()
-        
-        # フォントの準備
-        ui_font = pygame.font.Font(None, 72)
-        title_font = pygame.font.Font(None, 120)
-        boss_font = pygame.font.Font(None, config.BOSS_NAME_FONT_SIZE)
-        combo_font = pygame.font.Font(None, config.COMBO_TEXT_FONT_SIZE)
-        result_font = pygame.font.Font(None, 40)
 
-        # UIマネージャーのインスタンスを作成
-        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font, result_font)
+        # --- Lazy Initialization ---
+        # モバイルブラウザでの初期負荷を軽減するため、最初に最低限のものだけを初期化します。
+        # ゲームの主要なオブジェクトは、ユーザーの最初の入力後に生成されます。
+        self.game_initialized = False
+        self.ui_manager = None
+        self.data_manager = None
+        self.asset_manager = None
+        self.audio_manager = None
+        self.loading_scene = None
+        self.title_scene = None
+        self.bird = None
+        self.tower = None
+        self.clouds = []
+        self.ground = None
+        self.enemies = []
+        self.heart_items = []
+        self.speed_up_items = []
+        self.size_up_items = []
+        self.particles = []
+        self.game_logic_manager = None
+        self.high_score = 0
+        self.best_combo = 0
+        self.best_tower_height = 0
+        self.saved_sound_enabled = True
 
-        # データマネージャーのインスタンスを作成し、ハイスコアを読み込む
+        # "Click to Start" 表示用のフォントだけは先に読み込む
+        self.pre_init_font = pygame.font.Font(None, 120)
+
+        self.game_state = "WAITING_FOR_INPUT"  # ゲームの初期状態を「入力待ち」に変更
+
+    def _initialize_game_objects(self):
+        """
+        初回入力後に、ゲームの主要なオブジェクトを初期化する。
+        モバイルブラウザでの初期負荷を軽減するための遅延初期化。
+        """
+        if self.game_initialized:
+            return
+
+        print("ゲームオブジェクトの遅延初期化を開始します。")
+
+        # --- Managers and Data ---
         self.data_manager = DataManager()
         save_data = self.data_manager.load_data()
         self.high_score = save_data.get("high_score", 0)
@@ -56,23 +86,33 @@ class Game:
         self.best_tower_height = save_data.get("best_tower_height", 0)
         self.saved_sound_enabled = save_data.get("sound_enabled", True)
 
-        # オーディオマネージャーのインスタンスを作成
-        self.audio_manager = None
+        self.asset_manager = AssetManager()
 
-        # スリングショットのX座標と、タワーの初期の高さを定義
+        # --- Audio Initialization (must be after asset_manager) ---
+        if not config.DISABLE_SOUND_FOR_DEBUG:
+            self._initialize_audio()
+
+        # --- UI and Scenes ---
+        # フォントの準備
+        ui_font = pygame.font.Font(None, 72)
+        title_font = pygame.font.Font(None, 120)
+        boss_font = pygame.font.Font(None, config.BOSS_NAME_FONT_SIZE)
+        combo_font = pygame.font.Font(None, config.COMBO_TEXT_FONT_SIZE)
+        result_font = pygame.font.Font(None, 40)
+
+        self.ui_manager = UIManager(self.screen, ui_font, title_font, boss_font, combo_font, result_font)
+
         self.slingshot_x = config.SLINGSHOT_X
         self.initial_tower_top_y = config.GROUND_Y - (config.TOWER_INITIAL_BLOCKS * config.TOWER_BLOCK_HEIGHT)
 
-        # アセットとローディングシーンのインスタンスを作成
-        self.asset_manager = AssetManager()
         self.loading_scene = LoadingScene(self.ui_manager, self.asset_manager)
+        self.title_scene = TitleScene(self.ui_manager, self.audio_manager)
 
-        # シーンのインスタンスを作成
-        self.title_scene = TitleScene(self.ui_manager, None) # audio_managerは後で設定
+        # --- Game Objects and Logic ---
+        self._reset_game()
 
-        # ゲームの状態をリセットして初期化
-        self._reset_game()  # ゲームオブジェクトを先に初期化
-        self.game_state = "WAITING_FOR_INPUT"  # ゲームの初期状態を「入力待ち」に変更
+        self.game_initialized = True
+        print("ゲームオブジェクトの遅延初期化が完了しました。")
 
     def _setup_level(self, tower_top_y):
         """
@@ -174,8 +214,7 @@ class Game:
             if self.game_state == "WAITING_FOR_INPUT":
                 # どのイベントでも、初回入力であればオーディオを初期化し、ローディングを開始
                 if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
-                    if not config.DISABLE_SOUND_FOR_DEBUG:
-                        self._initialize_audio()
+                    self._initialize_game_objects()
                     self.game_state = "LOADING"
             elif self.game_state == "LOADING":
                 # ローディング中は入力を受け付けない
@@ -405,7 +444,7 @@ class Game:
                 draw_text(
                     self.screen,
                     "Click to Start",
-                    self.ui_manager.title_font, # タイトル用の大きなフォント
+                    self.pre_init_font, # 先に読み込んでおいたフォントを使用
                     config.WHITE,
                     (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2),
                     config.BLACK,
