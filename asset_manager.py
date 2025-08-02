@@ -26,36 +26,40 @@ class AssetManager:
         これにより、ビルドツール(pygbag)がアセットを検出しやすくなる。
         パスを直接記述することで、静的解析を助ける。
         """
-        self.sound_definitions = {
-            "combo_hit": {"path": "assets/audio/jump3.ogg", "volume": config.SE_COMBO_HIT_VOLUME},
-            "enemy_death": {"path": "assets/audio/explosion.ogg", "volume": config.SE_VOLUME},
-            "enemy_hit": {"path": "assets/audio/dead.ogg", "volume": config.SE_VOLUME},
-            "tower_damage": {"path": "assets/audio/tower_damage.ogg", "volume": config.SE_VOLUME},
-            "heart_collect": {"path": "assets/audio/heart_collect.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "stage_start": {"path": "", "volume": config.SE_VOLUME}, # This path is intentionally empty
-            "ui_click": {"path": "assets/audio/select.ogg", "volume": config.SE_VOLUME},
-            "item_spawn": {"path": "assets/audio/item_spawn.ogg", "volume": config.SE_VOLUME},
-            "speed_up_collect": {"path": "assets/audio/SpeedUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "size_up_collect": {"path": "assets/audio/GiantUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "gauge_max": {"path": "assets/audio/gauge_max.ogg", "volume": config.SE_VOLUME},
-        }
+        # --- デバッグモードでサウンドが無効な場合、アセットの定義自体をスキップする ---
+        # これにより、pygbagのビルド時に音声ファイルがパッケージングされるのを防ぎ、
+        # Webアプリの初期ダウンロードサイズを大幅に削減します。
+        if not config.DISABLE_SOUND_FOR_DEBUG:
+            self.sound_definitions = {
+                "combo_hit": {"path": "assets/audio/jump3.ogg", "volume": config.SE_COMBO_HIT_VOLUME},
+                "enemy_death": {"path": "assets/audio/explosion.ogg", "volume": config.SE_VOLUME},
+                "enemy_hit": {"path": "assets/audio/dead.ogg", "volume": config.SE_VOLUME},
+                "tower_damage": {"path": "assets/audio/tower_damage.ogg", "volume": config.SE_VOLUME},
+                "heart_collect": {"path": "assets/audio/heart_collect.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+                "stage_start": {"path": "", "volume": config.SE_VOLUME}, # This path is intentionally empty
+                "ui_click": {"path": "assets/audio/select.ogg", "volume": config.SE_VOLUME},
+                "item_spawn": {"path": "assets/audio/item_spawn.ogg", "volume": config.SE_VOLUME},
+                "speed_up_collect": {"path": "assets/audio/SpeedUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+                "size_up_collect": {"path": "assets/audio/GiantUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+                "gauge_max": {"path": "assets/audio/gauge_max.ogg", "volume": config.SE_VOLUME},
+            }
 
-        # 音階SEを追加
-        scale_paths = [
-            "assets/audio/scale_c.ogg",
-            "assets/audio/scale_d.ogg",
-            "assets/audio/scale_e.ogg",
-            "assets/audio/scale_f.ogg",
-            "assets/audio/scale_g.ogg",
-            "assets/audio/scale_a.ogg",
-            "assets/audio/scale_b.ogg",
-            "assets/audio/scale_c2.ogg",
-            "assets/audio/scale_d2.ogg",
-            "assets/audio/scale_e2.ogg",
-        ]
-        for i, path in enumerate(scale_paths):
-            key = f"scale_{i}"
-            self.sound_definitions[key] = {"path": path, "volume": config.SE_VOLUME}
+            # 音階SEを追加
+            scale_paths = [
+                "assets/audio/scale_c.ogg",
+                "assets/audio/scale_d.ogg",
+                "assets/audio/scale_e.ogg",
+                "assets/audio/scale_f.ogg",
+                "assets/audio/scale_g.ogg",
+                "assets/audio/scale_a.ogg",
+                "assets/audio/scale_b.ogg",
+                "assets/audio/scale_c2.ogg",
+                "assets/audio/scale_d2.ogg",
+                "assets/audio/scale_e2.ogg",
+            ]
+            for i, path in enumerate(scale_paths):
+                key = f"scale_{i}"
+                self.sound_definitions[key] = {"path": path, "volume": config.SE_VOLUME}
 
     def _collect_assets(self):
         """定義されたアセット情報を読み込みリストにまとめる。"""
