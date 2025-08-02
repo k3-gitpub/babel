@@ -58,7 +58,7 @@ jobs:
       - name: Build with pygbag
         # --archive オプションを追加して、Pythonランタイムを含む全てのアセットを
         # 一つのファイルにまとめ、外部CDNへのアクセスを防ぎます。
-        run: python -m pygbag --build test_main.py --archive
+        run: python -m pygbag --build --archive test_main.py
 
       # 7. PWAのService Workerを無効化 (キャッシュ問題の回避)
       # manifest.jsonは残し、Service Worker(pwa.js)のみを削除してキャッシュ問題を回避します。
