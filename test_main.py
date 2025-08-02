@@ -12,13 +12,16 @@ BLUE = (66, 165, 245)
 RED = (211, 47, 47)
 
 async def main():
-    pygame.init()
+    # pygame.init()は全てのモジュールを初期化しようとして失敗する可能性がある。
+    # 問題を切り分けるため、ディスプレイモジュールだけを明示的に初期化する。
+    pygame.display.init()
+
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Pygbag Ultra-Simple Test")
+    pygame.display.set_caption("Pygbag Barebones Test")
     clock = pygame.time.Clock()
     running = True
 
-    print("Ultra-Simple Test Program Started. No fonts used.")
+    print("Barebones Test Program Started. Only display module initialized.")
 
     while running:
         for event in pygame.event.get():
