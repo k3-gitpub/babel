@@ -1,2 +1,2 @@
 pygame
-pygbag>=0.10.0
+pygbag
