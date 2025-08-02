@@ -4,6 +4,7 @@
 
 import pygame
 import math
+import os
 import asyncio # Webアプリ(Pygbag)化のために追加
 import random
 import config
@@ -127,8 +128,27 @@ class Game:
 
         print("ユーザーの初回入力により、オーディオシステムを初期化します。")
         try:
+            # --- 堅牢性の向上: 既に初期化されている場合は一度終了する ---
+            # ブラウザの再読み込みなどで前の状態が残っている場合に対処
+            if pygame.mixer.get_init():
+                print("Mixerが既に初期化されています。一度終了します。")
+                pygame.mixer.quit()
+
             pygame.mixer.init()
             self.mixer_initialized = True
+
+            # --- Unlock Audio Context for Mobile Browsers ---
+            # モバイルブラウザの音声再生制限を確実に解除するため、
+            # ユーザー入力イベント内で短いサウンドを再生する。
+            try:
+                if os.path.exists(config.SE_UI_CLICK_PATH):
+                    unlock_sound = pygame.mixer.Sound(config.SE_UI_CLICK_PATH)
+                    unlock_sound.set_volume(config.SE_ITEM_COLLECT_VOLUME)
+                    unlock_sound.play()
+                    print("Audio context unlocked with a click sound.")
+            except Exception as e:
+                print(f"音声アンロック用のサウンド再生に失敗しました: {e}")
+
             self.audio_manager = AudioManager(self.asset_manager, initial_enabled=self.saved_sound_enabled)
             self.title_scene.audio_manager = self.audio_manager # TitleSceneにも参照を渡す
             print("Pygame mixer initialized successfully.")
