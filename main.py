@@ -73,7 +73,7 @@ class Game:
         self.title_scene = TitleScene(self.ui_manager, self.audio_manager)
 
         # ゲームの状態をリセットして初期化
-        self._reset_game(play_start_sound=False)  # ゲームオブジェクトを先に初期化（初回は音を鳴らさない）
+        self._reset_game()  # ゲームオブジェクトを先に初期化
         self.game_state = "TITLE"  # ゲームの初期状態を「タイトル」に設定
 
     def _setup_level(self, tower_top_y):
@@ -87,7 +87,7 @@ class Game:
         self.ground = Ground()
         self.enemies = []
 
-    def _reset_game(self, play_start_sound=True):
+    def _reset_game(self):
         """
         ゲームを初期化またはリセットし、すべてのオブジェクトとマネージャーをセットアップする。
         """
@@ -102,8 +102,7 @@ class Game:
         self.game_logic_manager = GameLogicManager(
             self.bird, self.tower, self.clouds, self.ground, self.enemies,
             self.heart_items, self.speed_up_items, self.size_up_items,
-            self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager,
-            play_start_sound=play_start_sound
+            self.particles, self.slingshot_pos, self.ui_manager, self.audio_manager
         )
 
         # ゲームループに関わる状態もここでリセットする
@@ -131,7 +130,7 @@ class Game:
             if self.game_state == "TITLE":
                 action = self.title_scene.process_event(event)
                 if action == "START_GAME":
-                    self._reset_game(play_start_sound=True)
+                    self._reset_game()
                 elif action == "TOGGLE_SOUND":
                     # サウンド設定が変更されたら、現在の設定を保存する
                     self._save_current_settings()
@@ -142,7 +141,7 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
                         if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"] or config.DEBUG:
-                            self._reset_game(play_start_sound=True)
+                            self._reset_game()
                             print("--- Level Restarted ---")
                     
                     if config.DEBUG:
@@ -163,7 +162,7 @@ class Game:
                         # リスタートボタンがクリックされたか判定
                         if self.ui_manager.end_screen.restart_button_rect.collidepoint(pos):
                             if self.audio_manager: self.audio_manager.play_ui_click_sound()
-                            self._reset_game(play_start_sound=True)
+                            self._reset_game()
                             print("--- Level Restarted via Button ---")
                 
                 # --- マウス・タッチ入力の統合 ---
@@ -212,17 +211,6 @@ class Game:
 
         # タイトル画面でも背景が動くように、雲は常に更新
         for cloud in self.clouds: cloud.update()
-
-        # オーディオマネージャーの更新
-        if self.audio_manager:
-            is_boss_stage = False
-            # PLAYING状態の時のみステージ設定を確認
-            if self.game_state == "PLAYING":
-                settings = self.game_logic_manager.stage_manager.get_current_stage_settings()
-                if settings:
-                    is_boss_stage = settings.get("is_boss_stage", False)
-            
-            self.audio_manager.update(self.game_state, is_boss_stage)
 
         if self.game_state == "TITLE":
             # タイトルシーンの状態を更新

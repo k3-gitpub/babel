@@ -28,14 +28,15 @@ BOUNCINESS = 0.5 # 反発係数（0に近いほど跳ねない）
 # オーディオ設定
 BGM_VOLUME = 0.2 # BGMの音量 (0.0 ~ 1.0)
 BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ秒)
-BGM_NORMAL_PATH = "assets/audio/.ogg" # 通常BGMのパス
-BGM_BOSS_PATH = "assets/audio/.ogg" # ボス戦BGMのパス
+BGM_NORMAL_PATH = "" # 通常BGMのパス
+BGM_BOSS_PATH = "" # ボス戦BGMのパス
 SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
 
 # コンボヒット音の設定
 USE_SCALE_SOUND_FOR_COMBO = False # True: ドレミ音階, False: 単一ヒット音
 SE_COMBO_HIT_PATH = "assets/audio/jump3.ogg" # 単一ヒット音として使用するSEのパス
 SE_COMBO_HIT_VOLUME = 0.2 # 単一ヒット音の音量 (0.0 ~ 1.0)
+SE_ITEM_COLLECT_VOLUME = 0.6 # アイテム取得SEの音量
 
 SCALE_SOUND_PATHS = [
     "assets/audio/scale_c.ogg",
@@ -366,7 +367,7 @@ SIZE_UP_ITEM_OUTLINE_COLOR = BLACK
 SIZE_UP_ITEM_OUTLINE_WIDTH = 2
 
 # アイテム効果設定
-SPEED_BOOST_MULTIPLIER = 2.0 # 速度の増加倍率
+SPEED_BOOST_ADDITION = 15.0 # 速度の加算値
 SIZE_BOOST_DURATION = 5000 # 巨大化の持続時間 (ms)
 
 # ハート取得パーティクルエフェクトの設定
@@ -397,6 +398,10 @@ HIT_PARTICLE_COLORS_WALL = [(100, 100, 255), (150, 150, 255)] # 壁用の青系
 COMBO_GAUGE_MAX = 1000
 COMBO_GAUGE_INCREASE_BASE = 25
 COMBO_GAUGE_INCREASE_PER_COMBO = 15
+COMBO_GAUGE_BONUS = {
+    "enemy_defeat": 100,
+    "boss_weak_point": 200,
+}
 
 # コンボゲージUI設定
 COMBO_GAUGE_WIDTH = 200
@@ -408,7 +413,9 @@ COMBO_GAUGE_COLOR = BLUE
 COMBO_GAUGE_OUTLINE_COLOR = BLACK
 COMBO_GAUGE_OUTLINE_WIDTH = 2
 COMBO_GAUGE_FLASH_COLOR = WHITE
-COMBO_GAUGE_FLASH_DURATION = 750 # ms
+COMBO_GAUGE_FLASH_DURATION = 1500 # ms
+COMBO_GAUGE_PULSE_HOLD_DURATION = 1000 # ms # ゲージが最大になった時に維持する時間
+COMBO_GAUGE_BLINK_INTERVAL = 75 # ms # ゲージ満タン時の点滅間隔
 COMBO_GAUGE_TEXT_BASE_FONT_SIZE = 24
 COMBO_GAUGE_TEXT_PULSE_ADDITIONAL_SIZE = 48 # 満タン時に基本サイズにこの値が加算される
 ITEM_SPAWN_DELAY_AFTER_GAUGE_MAX = 500 # ゲージ満タン演出が終わってからアイテムが出現するまでの待機時間(ms)
@@ -418,7 +425,7 @@ SE_GAUGE_MAX_PATH = "assets/audio/gauge_max.ogg"
 
 # アイテム出現アニメーション設定
 ITEM_SPAWN_ANIMATION_DURATION = 750 # ms
-ITEM_SPAWN_ANIMATION_MAX_SCALE = 2.5 # 出現時に最大でこの倍率まで大きくなる
+ITEM_SPAWN_ANIMATION_MAX_SCALE = 3 # 出現時に最大でこの倍率まで大きくなる
 
 # アイテム出現設定
 ITEM_SPAWN_CHANCES = {

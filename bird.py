@@ -109,9 +109,14 @@ class Bird:
         self.launched_upwards = self.velocity.y < 0
 
     def apply_speed_boost(self):
-        """スピードアップアイテムの効果を適用する。"""
-        self.velocity *= config.SPEED_BOOST_MULTIPLIER
-        print(f"スピードブースト！ 速度が {config.SPEED_BOOST_MULTIPLIER}倍に。")
+        """スピードアップアイテムの効果を適用する。現在の進行方向に速度を加算する。"""
+        if self.velocity.length_squared() > 0:
+            direction = self.velocity.normalize()
+            self.velocity += direction * config.SPEED_BOOST_ADDITION
+            print(f"スピードブースト！ 速度が {config.SPEED_BOOST_ADDITION} 加算された。")
+        else:
+            # 速度がゼロの場合は何もしない（通常はリセットされるため、この状況は稀）
+            print("スピードブースト！ 速度がゼロのため効果なし。")
 
     def apply_size_boost(self):
         """巨大化アイテムの効果を適用する。"""

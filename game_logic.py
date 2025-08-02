@@ -40,7 +40,7 @@ class GameLogicManager:
     """
     ゲームのロジック（衝突判定、エンティティ生成、状態遷移など）を管理するクラス。
     """
-    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, speed_up_items, size_up_items, particles, slingshot_pos, ui_manager, audio_manager, play_start_sound=True):
+    def __init__(self, bird, tower, clouds, ground, enemies, heart_items, speed_up_items, size_up_items, particles, slingshot_pos, ui_manager, audio_manager):
         # ゲームオブジェクトへの参照を保持
         self.bird = bird
         self.tower = tower
@@ -76,7 +76,7 @@ class GameLogicManager:
         self.item_spawn_timer = 0
 
         # ゲームの状態とタイマーを初期化
-        self.reset_level_state(play_sound=play_start_sound)
+        self.reset_level_state()
 
         # ボスが出現したかどうかを追跡するフラグ
         self.boss_spawned = False
@@ -124,7 +124,7 @@ class GameLogicManager:
 
         self._cleanup_entities()
 
-    def reset_level_state(self, play_sound=True):
+    def reset_level_state(self):
         """ゲームの状態を現在のステージ開始時にリセットする。"""
         self.stage_state = "PLAYING"
         self.enemies_defeated_count = 0
@@ -132,9 +132,6 @@ class GameLogicManager:
         self.combo_gauge = 0 # ステージ開始時にゲージもリセット
         self.gauge_max_effect_active = False # 演出フラグもリセット
         self.item_spawn_timer = 0
-        # ステージ開始SEを再生
-        if play_sound and self.audio_manager:
-            self.audio_manager.play_stage_start_sound()
 
         # 敵の出現タイマーのみリセット
         settings = self.stage_manager.get_current_stage_settings()
@@ -145,6 +142,7 @@ class GameLogicManager:
         """ゲームオーバー条件をチェックする。"""
         if self.tower.is_destroyed() and self.stage_state == "PLAYING":
             self.stage_state = "GAME_OVER"
+            if self.audio_manager: self.audio_manager.stop_music()
             print("ゲームオーバー！タワーが完全に破壊された。")
 
     def _check_stage_clear(self):
@@ -226,6 +224,17 @@ class GameLogicManager:
         self.combo_gauge += increase_amount
         self.combo_gauge = min(self.combo_gauge, config.COMBO_GAUGE_MAX)
         # print(f"ゲージ増加: +{increase_amount:.0f} -> 現在のゲージ: {self.combo_gauge:.0f}/{config.COMBO_GAUGE_MAX}") # デバッグ用
+
+    def _add_bonus_combo_gauge(self, bonus_type: str):
+        """
+        指定された種類のボーナスゲージを加算する。
+        :param bonus_type: config.COMBO_GAUGE_BONUS に定義されているキー
+        """
+        bonus_amount = config.COMBO_GAUGE_BONUS.get(bonus_type, 0)
+        if bonus_amount > 0:
+            self.combo_gauge += bonus_amount
+            self.combo_gauge = min(self.combo_gauge, config.COMBO_GAUGE_MAX)
+            print(f"ゲージボーナス！ ({bonus_type}) +{bonus_amount:.0f} -> 現在のゲージ: {self.combo_gauge:.0f}/{config.COMBO_GAUGE_MAX}")
 
     def _spawn_item_from_gauge(self):
         """コンボゲージが満タンになった時にアイテムを抽選・出現させる。"""
@@ -474,6 +483,7 @@ class GameLogicManager:
                         if new_combo_count >= config.COMBO_MIN_TO_SHOW:
                             self.ui_manager.add_combo_indicator(self.bird.pos, new_combo_count)
                         self._increase_combo_gauge()
+                        self._add_bonus_combo_gauge("boss_weak_point")
                         # コンボ音と、弱点ヒットSE（死亡SEを流用）を両方再生する
                         if self.audio_manager:
                             self.audio_manager.play_combo_sound()
@@ -547,6 +557,7 @@ class GameLogicManager:
                     force = config.ENEMY_KNOCKBACK_FORCE + (self.bird.attack_power * config.ENEMY_KNOCKBACK_ATTACK_POWER_SCALE)
                     enemy.knockback(direction, force)
                     if is_enemy_defeated:
+                        self._add_bonus_combo_gauge("enemy_defeat")
                         self._calculate_and_add_score(enemy.rect.center, "enemy")
                         if self.audio_manager: self.audio_manager.play_enemy_death_sound()
                         self.enemies_defeated_count += 1
@@ -637,6 +648,7 @@ class GameLogicManager:
         if not self.stage_manager.advance_stage():
             # 最終ステージをクリアした場合
             self.stage_state = "GAME_WON"
+            if self.audio_manager: self.audio_manager.stop_music()
             # クリア時のブロック数を保存
             self.final_block_count = len(self.tower.blocks)
             print(f"Congratulations! You have beaten all stages! Tower height: {self.final_block_count}")
@@ -647,6 +659,13 @@ class GameLogicManager:
         
         # 次のステージの設定を取得
         settings = self.stage_manager.get_current_stage_settings()
+
+        # --- BGMの切り替え ---
+        if self.audio_manager:
+            if settings.get("is_boss_stage"):
+                self.audio_manager.play_bgm("boss")
+            else:
+                self.audio_manager.play_bgm("normal")
 
         # 設定に基づいて雲を再配置するか決定
         if settings.get("rearrange_clouds", False):
