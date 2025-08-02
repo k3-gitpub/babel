@@ -46,30 +46,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libffi-dev pkg-config
 
-      # 5. パッケージをインストール (pygbagはGitHubから直接)
-      # requirements.txtからpygameをインストールし、--pwa=0オプションを持つ
-      # 開発版のpygbagをGitHubから直接インストールします。
+      # 5. パッケージをインストール
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install git+https://github.com/pmp-p/pygbag.git
 
       # 6. PygbagでWebアプリをビルドする
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
       # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        # --pwa=0: PWA(Service Worker)を無効化し、モバイルブラウザでのキャッシュ問題を回避します。
-        # --build: 既存のビルドキャッシュを無視してクリーンビルドを実行します。
-        run: python -m pygbag --pwa=0 --build .
+        run: python -m pygbag --build .
 
-      # 7. ビルド成果物（Webサイトのファイル）をアップロードする
+      # 7. PWA機能を無効化 (キャッシュ問題の回避)
+      # 公式版pygbag(0.9.2)には--pwa=0がないため、ビルド後に手動でPWA関連ファイルを削除します。
+      - name: Disable PWA features
+        run: |
+          echo "Disabling PWA by removing related files..."
+          rm -f build/web/pwa.js
+          rm -f build/web/manifest.json
+          sed -i '/<script src="pwa.js"><\/script>/d' build/web/index.html
+          echo "PWA files removed."
+
+      # 8. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-      # 8. アップロードした成果物をGitHub Pagesにデプロイする
+      # 9. アップロードした成果物をGitHub Pagesにデプロイする
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
