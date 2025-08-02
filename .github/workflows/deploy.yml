@@ -56,9 +56,8 @@ jobs:
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
       # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        # --archive オプションを追加して、Pythonランタイムを含む全てのアセットを
-        # 一つのファイルにまとめ、外部CDNへのアクセスを防ぎます。
-        run: python -m pygbag --build --archive test_main.py
+        # --cdn . オプションで、ランタイムを外部サーバーではなくローカルから読み込むように強制します。
+        run: python -m pygbag --build --cdn . test_main.py
 
       # 7. PWAのService Workerを無効化 (キャッシュ問題の回避)
       # manifest.jsonは残し、Service Worker(pwa.js)のみを削除してキャッシュ問題を回避します。
