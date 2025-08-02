@@ -40,16 +40,6 @@ jobs:
         with:
           python-version: '3.11' # 使用するPythonのバージョン
 
-      # 3. pipのキャッシュを設定
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          # requirements.txt を使用している場合は、そのハッシュをキーに含めるとより効果的です
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       # 4. Pygameのビルドに必要なシステムライブラリをインストール
       - name: Install system dependencies
         run: |
