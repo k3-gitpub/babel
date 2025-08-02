@@ -23,25 +23,37 @@ class AssetManager:
     def _define_assets(self):
         """
         ゲーム内で使用するすべてのアセットの情報をここで一元管理する。
-        これにより、ビルドツール(pygbag)がアセットを検出しやすくなる
+        これにより、ビルドツール(pygbag)がアセットを検出しやすくなる。
+        パスを直接記述することで、静的解析を助ける。
         """
-        # AudioManagerからse_pathsの定義を参考に、読み込むべきSEを定義
         self.sound_definitions = {
-            "combo_hit": {"path": config.SE_COMBO_HIT_PATH, "volume": config.SE_COMBO_HIT_VOLUME},
-            "enemy_death": {"path": config.SE_ENEMY_DEATH_PATH, "volume": config.SE_VOLUME},
-            "enemy_hit": {"path": config.SE_ENEMY_HIT_PATH, "volume": config.SE_VOLUME},
-            "tower_damage": {"path": config.SE_TOWER_DAMAGE_PATH, "volume": config.SE_VOLUME},
-            "heart_collect": {"path": config.SE_HEART_COLLECT_PATH, "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "stage_start": {"path": config.SE_STAGE_START_PATH, "volume": config.SE_VOLUME},
-            "ui_click": {"path": config.SE_UI_CLICK_PATH, "volume": config.SE_VOLUME},
-            "item_spawn": {"path": config.SE_ITEM_SPAWN_PATH, "volume": config.SE_VOLUME},
-            "speed_up_collect": {"path": config.SE_SPEED_UP_COLLECT_PATH, "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "size_up_collect": {"path": config.SE_SIZE_UP_COLLECT_PATH, "volume": config.SE_ITEM_COLLECT_VOLUME},
-            "gauge_max": {"path": config.SE_GAUGE_MAX_PATH, "volume": config.SE_VOLUME},
+            "combo_hit": {"path": "assets/audio/jump3.ogg", "volume": config.SE_COMBO_HIT_VOLUME},
+            "enemy_death": {"path": "assets/audio/explosion.ogg", "volume": config.SE_VOLUME},
+            "enemy_hit": {"path": "assets/audio/dead.ogg", "volume": config.SE_VOLUME},
+            "tower_damage": {"path": "assets/audio/tower_damage.ogg", "volume": config.SE_VOLUME},
+            "heart_collect": {"path": "assets/audio/heart_collect.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+            "stage_start": {"path": "", "volume": config.SE_VOLUME}, # This path is intentionally empty
+            "ui_click": {"path": "assets/audio/select.ogg", "volume": config.SE_VOLUME},
+            "item_spawn": {"path": "assets/audio/item_spawn.ogg", "volume": config.SE_VOLUME},
+            "speed_up_collect": {"path": "assets/audio/SpeedUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+            "size_up_collect": {"path": "assets/audio/GiantUP.ogg", "volume": config.SE_ITEM_COLLECT_VOLUME},
+            "gauge_max": {"path": "assets/audio/gauge_max.ogg", "volume": config.SE_VOLUME},
         }
 
         # 音階SEを追加
-        for i, path in enumerate(config.SCALE_SOUND_PATHS):
+        scale_paths = [
+            "assets/audio/scale_c.ogg",
+            "assets/audio/scale_d.ogg",
+            "assets/audio/scale_e.ogg",
+            "assets/audio/scale_f.ogg",
+            "assets/audio/scale_g.ogg",
+            "assets/audio/scale_a.ogg",
+            "assets/audio/scale_b.ogg",
+            "assets/audio/scale_c2.ogg",
+            "assets/audio/scale_d2.ogg",
+            "assets/audio/scale_e2.ogg",
+        ]
+        for i, path in enumerate(scale_paths):
             key = f"scale_{i}"
             self.sound_definitions[key] = {"path": path, "volume": config.SE_VOLUME}
 
