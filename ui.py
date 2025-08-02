@@ -151,13 +151,33 @@ class HUD:
             if self.is_gauge_flashing:
                 elapsed_time = current_time - self.gauge_flash_start_time
                 if elapsed_time < config.COMBO_GAUGE_FLASH_DURATION:
-                    # サイン波を使って滑らかに点滅させる (0 -> 1 -> 0)
-                    flash_progress = math.sin((elapsed_time / config.COMBO_GAUGE_FLASH_DURATION) * math.pi)
-                    # 色を線形補間
-                    r = int(config.COMBO_GAUGE_COLOR[0] + (config.COMBO_GAUGE_FLASH_COLOR[0] - config.COMBO_GAUGE_COLOR[0]) * flash_progress)
-                    g = int(config.COMBO_GAUGE_COLOR[1] + (config.COMBO_GAUGE_FLASH_COLOR[1] - config.COMBO_GAUGE_COLOR[1]) * flash_progress)
-                    b = int(config.COMBO_GAUGE_COLOR[2] + (config.COMBO_GAUGE_FLASH_COLOR[2] - config.COMBO_GAUGE_COLOR[2]) * flash_progress)
-                    foreground_color = (r, g, b)
+                    # --- Grow-Hold-Shrink アニメーション ---
+                    hold_duration = config.COMBO_GAUGE_PULSE_HOLD_DURATION
+                    grow_shrink_duration = config.COMBO_GAUGE_FLASH_DURATION - hold_duration
+                    grow_duration = grow_shrink_duration / 2.0
+                    hold_start_time = grow_duration
+                    shrink_start_time = hold_start_time + hold_duration
+
+                    if elapsed_time < grow_duration:
+                        # Grow phase (0 to 1)
+                        progress = elapsed_time / grow_duration
+                        flash_progress = math.sin(progress * math.pi / 2.0)
+                    elif elapsed_time < shrink_start_time:
+                        # Hold phase (at 1)
+                        flash_progress = 1.0
+                    else:
+                        # Shrink phase (1 to 0)
+                        time_in_shrink = elapsed_time - shrink_start_time
+                        shrink_duration = grow_duration
+                        progress = time_in_shrink / shrink_duration
+                        flash_progress = math.cos(progress * math.pi / 2.0)
+
+                    # --- 色の点滅処理 ---
+                    # 経過時間を点滅間隔で割り、その商が偶数か奇数かで色を決定
+                    if (elapsed_time // config.COMBO_GAUGE_BLINK_INTERVAL) % 2 == 0:
+                        foreground_color = config.COMBO_GAUGE_FLASH_COLOR # 白
+                    else:
+                        foreground_color = config.COMBO_GAUGE_COLOR # 元の色
                 else:
                     self.is_gauge_flashing = False # エフェクト終了
 

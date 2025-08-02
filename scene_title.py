@@ -111,6 +111,7 @@ class TitleScene:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             if self.audio_manager:
                 self.audio_manager.play_ui_click_sound()
+                self.audio_manager.play_bgm("normal")
             return "START_GAME"
         
         # --- マウス・タッチ入力の統合 ---
@@ -123,6 +124,7 @@ class TitleScene:
             if self.start_button_rect.collidepoint(pos):
                 if self.audio_manager:
                     self.audio_manager.play_ui_click_sound()
+                    self.audio_manager.play_bgm("normal")
                 return "START_GAME"
 
             # サウンドボタンがクリックされたか判定
