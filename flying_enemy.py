@@ -56,7 +56,7 @@ class FlyingEnemy:
         # それを回転・拡縮して画面にblitする方式に変更します。
         # これにより、画面外の頂点を扱う際のPygameの描画アーティファクトを回避できます。
         size_int = int(self.original_size)
-        self.original_image = pygame.Surface((size_int, size_int), pygame.SRCALPHA)
+        self.original_image = pygame.Surface((size_int, size_int), pygame.SRCALPHA).convert_alpha()
 
         # --- 本体（三角形）を描画 ---
         # ポイントは (先端, 左下, 左上)

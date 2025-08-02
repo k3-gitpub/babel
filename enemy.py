@@ -110,6 +110,11 @@ class Enemy:
 
     def draw(self, screen):
         """敵を描画する"""
+        # --- パフォーマンス改善: 画面外のオブジェクトは描画しない ---
+        screen_rect = screen.get_rect()
+        if not self.rect.colliderect(screen_rect):
+            return
+
         if self.state == "ALIVE":
             # 本体
             pygame.draw.rect(screen, self.color, self.rect)
