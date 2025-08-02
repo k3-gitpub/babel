@@ -432,13 +432,10 @@ class Game:
     def _draw_screen(self):
         """描画処理 (Draw)"""
         mouse_pos = pygame.mouse.get_pos()
-        # --- 共通の背景描画 ---
-        self.screen.fill(config.BLUE)
-        for cloud in self.clouds: cloud.draw(self.screen)
-        self.ground.draw(self.screen)
 
         # --- 状態に応じた描画の切り替え ---
         if self.game_state == "WAITING_FOR_INPUT":
+            self.screen.fill(config.BLUE)
             # 「クリックして開始」のテキストを点滅描画
             if (pygame.time.get_ticks() // config.DRAG_TEXT_BLINK_INTERVAL) % 2 == 0:
                 draw_text(
@@ -451,13 +448,22 @@ class Game:
                     config.UI_TITLE_OUTLINE_WIDTH
                 )
         elif self.game_state == "LOADING":
-            # ローディングシーンを描画
+            # ローディングシーンは自身の背景(塗りつぶし)も描画する
             self.loading_scene.draw(self.screen)
         elif self.game_state == "TITLE":
+            # 共通の背景描画
+            self.screen.fill(config.BLUE)
+            for cloud in self.clouds: cloud.draw(self.screen)
+            self.ground.draw(self.screen)
             # タイトルシーンは、背景の上に自身のオブジェクト（タワー、ボール、UI）を描画する
             self.title_scene.draw(self.screen)
 
         elif self.game_state == "PLAYING":
+            # 共通の背景描画
+            self.screen.fill(config.BLUE)
+            for cloud in self.clouds: cloud.draw(self.screen)
+            self.ground.draw(self.screen)
+
             # --- カーソル形状の更新 ---
             if self.game_logic_manager.stage_state in ["GAME_OVER", "GAME_WON"]:
                 is_restart_hovered = self.ui_manager.end_screen.restart_button_rect.collidepoint(mouse_pos)
