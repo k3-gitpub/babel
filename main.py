@@ -28,14 +28,7 @@ class Game:
     def __init__(self):
         """ゲームの初期化"""
         pygame.init()
-        # mixerの初期化。Webアプリ化で失敗することがあるため、try-exceptで囲む
-        try:
-            pygame.mixer.init()
-            print("Pygame mixer initialized successfully.")
-            self.mixer_initialized = True
-        except pygame.error as e:
-            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
-            self.mixer_initialized = False
+        self.mixer_initialized = False # オーディオはユーザーの初回入力後に初期化
 
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Babel's Tower Shooter")
@@ -57,20 +50,17 @@ class Game:
         self.high_score = save_data.get("high_score", 0)
         self.best_combo = save_data.get("best_combo", 0)
         self.best_tower_height = save_data.get("best_tower_height", 0)
-        sound_enabled = save_data.get("sound_enabled", True)
+        self.saved_sound_enabled = save_data.get("sound_enabled", True)
 
         # オーディオマネージャーのインスタンスを作成
-        if self.mixer_initialized:
-            self.audio_manager = AudioManager(initial_enabled=sound_enabled)
-        else:
-            self.audio_manager = None
+        self.audio_manager = None
 
         # スリングショットのX座標と、タワーの初期の高さを定義
         self.slingshot_x = config.SLINGSHOT_X
         self.initial_tower_top_y = config.GROUND_Y - (config.TOWER_INITIAL_BLOCKS * config.TOWER_BLOCK_HEIGHT)
 
         # シーンのインスタンスを作成
-        self.title_scene = TitleScene(self.ui_manager, self.audio_manager)
+        self.title_scene = TitleScene(self.ui_manager, None) # audio_managerは後で設定
 
         # ゲームの状態をリセットして初期化
         self._reset_game()  # ゲームオブジェクトを先に初期化
@@ -121,6 +111,24 @@ class Game:
             self.audio_manager.reset_scale()
         self.game_state = "PLAYING"  # ゲームをリセットしたら、状態を「プレイ中」にする
 
+    def _initialize_audio(self):
+        """
+        ユーザーの最初のインタラクションでオーディオシステムを初期化する。
+        """
+        if self.mixer_initialized:
+            return
+
+        print("ユーザーの初回入力により、オーディオシステムを初期化します。")
+        try:
+            pygame.mixer.init()
+            self.mixer_initialized = True
+            self.audio_manager = AudioManager(initial_enabled=self.saved_sound_enabled)
+            self.title_scene.audio_manager = self.audio_manager # TitleSceneにも参照を渡す
+            print("Pygame mixer initialized successfully.")
+        except pygame.error as e:
+            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
+            self.mixer_initialized = False
+
     def _handle_events(self):
         """イベント処理 (Input)"""
         for event in pygame.event.get():
@@ -128,6 +136,10 @@ class Game:
                 self.running = False
 
             if self.game_state == "TITLE":
+                # どのイベントでも、初回入力であればオーディオを初期化
+                if not self.mixer_initialized and (event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]):
+                    self._initialize_audio()
+
                 action = self.title_scene.process_event(event)
                 if action == "START_GAME":
                     self._reset_game()
