@@ -56,24 +56,25 @@ jobs:
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
       # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        # --cdn . オプションで、ランタイムを外部サーバーではなくローカルから読み込むように強制します。
-        run: python -m pygbag --build --cdn . test_main.py
+        # --archive オプションで、ランタイムを含む全てのアセットを自己完結させます。
+        # ビルド対象が test_main.py のため、出力先は build/test_main/ になります。
+        run: python -m pygbag --build --archive test_main.py
 
       # 7. PWAのService Workerを無効化 (キャッシュ問題の回避)
       # manifest.jsonは残し、Service Worker(pwa.js)のみを削除してキャッシュ問題を回避します。
       # これにより、モバイルブラウザでの初回起動の安定性が向上する可能性があります。
       - name: Disable PWA Service Worker
         run: |
-          echo "Disabling PWA Service Worker by removing pwa.js..."
-          rm -f build/web/pwa.js
-          sed -i '/<script src="pwa.js"><\/script>/d' build/web/index.html
-          echo "PWA Service Worker removed."
+          echo "Disabling PWA Service Worker in build/test_main..."
+          rm -f build/test_main/pwa.js
+          sed -i '/<script src="pwa.js"><\/script>/d' build/test_main/index.html
+          echo "PWA Service Worker removed from build/test_main."
 
       # 8. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
+          path: build/test_main
 
       # 9. アップロードした成果物をGitHub Pagesにデプロイする
       - name: Deploy to GitHub Pages
