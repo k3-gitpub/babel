@@ -134,6 +134,10 @@ class Game:
                 print("Mixerが既に初期化されています。一度終了します。")
                 pygame.mixer.quit()
 
+            if pygame.mixer.get_init():
+                print("Mixerが既に初期化されています。一度終了します。")
+                pygame.mixer.quit()
+
             pygame.mixer.init()
             self.mixer_initialized = True
 
