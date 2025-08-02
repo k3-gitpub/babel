@@ -45,8 +45,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # ビルド対象がtest_main.pyなので、出力先はbuild/test_mainになります。
-          path: build/test_main
+          # --archive オプションを使用した場合、出力先は常に build/web になります。
+          path: build/web
 
       - name: Deploy to GitHub Pages
         id: deployment
