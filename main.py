@@ -78,10 +78,17 @@ class Game:
         """
         ゲームのレベル（弾、ブロック、雲）をセットアップし、オブジェクトをインスタンス変数として設定する。
         """
+        # --- ミニマルモード設定 ---
+        initial_blocks = 1 if config.MINIMAL_MODE_FOR_DEBUG else config.TOWER_INITIAL_BLOCKS
+        cloud_min = 1 if config.MINIMAL_MODE_FOR_DEBUG else config.CLOUD_MIN_COUNT
+        cloud_max = 2 if config.MINIMAL_MODE_FOR_DEBUG else config.CLOUD_MAX_COUNT
+
         tower_base_x = self.slingshot_x - config.TOWER_BLOCK_WIDTH / 2
-        self.tower = Tower(tower_base_x, config.GROUND_Y, tower_top_y)
+        # ミニマルモード用のブロック数でタワーを生成
+        self.tower = Tower(tower_base_x, config.GROUND_Y, config.GROUND_Y - (initial_blocks * config.TOWER_BLOCK_HEIGHT))
         self.bird = Bird(self.slingshot_x, self.tower.get_top_y() + config.SLINGSHOT_OFFSET_Y, config.BIRD_DEFAULT_RADIUS)
-        self.clouds = create_cloud_layout(self.slingshot_x, tower_top_y)
+        # ミニマルモード用の雲の数で生成
+        self.clouds = create_cloud_layout(self.slingshot_x, tower_top_y, cloud_min, cloud_max)
         self.ground = Ground()
         self.enemies = []
 

@@ -57,9 +57,10 @@ class TitleScene:
         self.spawn_count = 0 # スポーンした敵の数を記録
         self.spawn_offsets = [150, 250, 100, 200] # 画面右端からのオフセットリスト
 
-        # 最初の敵を即座に出現させ、タイマーを開始する
-        self._spawn_decorative_enemy()
-        self.last_enemy_spawn_time = pygame.time.get_ticks()
+        # ミニマルモードでない場合のみ、にぎやかしの敵を生成
+        if not config.MINIMAL_MODE_FOR_DEBUG:
+            self._spawn_decorative_enemy()
+            self.last_enemy_spawn_time = pygame.time.get_ticks()
 
         # スタートボタンのRectを定義
         button_width, button_height = 200, 60
@@ -196,11 +197,12 @@ class TitleScene:
             self.bird.update_for_title_screen(self.slingshot_pos)
 
         # --- にぎやかし用の敵を時間差で出現させる ---
-        can_spawn = len(self.decorative_enemies) < config.TITLE_ENEMY_MAX_COUNT
-        time_to_spawn = current_time - self.last_enemy_spawn_time > config.TITLE_ENEMY_SPAWN_INTERVAL
-        if can_spawn and time_to_spawn:
-            self._spawn_decorative_enemy()
-            self.last_enemy_spawn_time = current_time
+        if not config.MINIMAL_MODE_FOR_DEBUG:
+            can_spawn = len(self.decorative_enemies) < config.TITLE_ENEMY_MAX_COUNT
+            time_to_spawn = current_time - self.last_enemy_spawn_time > config.TITLE_ENEMY_SPAWN_INTERVAL
+            if can_spawn and time_to_spawn:
+                self._spawn_decorative_enemy()
+                self.last_enemy_spawn_time = current_time
 
         # にぎやかし用の敵を更新
         for enemy in self.decorative_enemies:

@@ -3,17 +3,19 @@ import random
 import config
 from cloud import Cloud
 
-def create_cloud_layout(slingshot_x, tower_top_y):
+def create_cloud_layout(slingshot_x, tower_top_y, min_count=config.CLOUD_MIN_COUNT, max_count=config.CLOUD_MAX_COUNT):
     """
     重ならないように雲を生成し、リストとして返す。
     最低個数を下回った場合は、生成をやり直す。
+    :param min_count: 生成する雲の最小数
+    :param max_count: 生成する雲の最大数
     """
     outer_attempts = 0
     max_outer_attempts = 10 # 生成全体のリトライ回数
 
     while outer_attempts < max_outer_attempts:
         clouds = []
-        num_clouds = random.randint(config.CLOUD_MIN_COUNT, config.CLOUD_MAX_COUNT)
+        num_clouds = random.randint(min_count, max_count)
         max_attempts = 100 # 無限ループを避けるための最大試行回数
         attempts = 0
 
@@ -47,12 +49,12 @@ def create_cloud_layout(slingshot_x, tower_top_y):
             attempts += 1
 
         # 生成された雲の数が最低個数を満たしていれば、ループを抜けて結果を返す
-        if len(clouds) >= config.CLOUD_MIN_COUNT:
+        if len(clouds) >= min_count:
             print(f"雲の生成に成功しました。個数: {len(clouds)}")
             return clouds
         
         outer_attempts += 1
-        print(f"雲の生成数が最低個数({config.CLOUD_MIN_COUNT})に満たなかったため、リトライします... ({outer_attempts}/{max_outer_attempts})")
+        print(f"雲の生成数が最低個数({min_count})に満たなかったため、リトライします... ({outer_attempts}/{max_outer_attempts})")
 
     # 最大リトライ回数に達しても最低個数を満たせなかった場合
     print(f"警告: 雲の生成に失敗しました。最後に生成された不完全な雲のリストを返します。個数: {len(clouds)}")

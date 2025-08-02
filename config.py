@@ -6,6 +6,7 @@ DEBUG = True # デバッグモードのフラグ。リリース時にはFalseに
 
 # --- サウンドのデバッグ設定 ---
 DISABLE_SOUND_FOR_DEBUG = True # Trueにすると、音声関連の処理をすべてスキップします
+MINIMAL_MODE_FOR_DEBUG = True # Trueにすると、オブジェクトの数を減らしてメモリ使用量を抑えます
 DEBUG_START_STAGE = 1 # デバッグモード時に開始するステージ番号
 
 # 色の定義
