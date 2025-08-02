@@ -9,17 +9,16 @@ SCREEN_HEIGHT = 720
 # 色
 WHITE = (255, 255, 255)
 BLUE = (66, 165, 245)
-BLACK = (0, 0, 0)
+RED = (211, 47, 47)
 
 async def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Pygbag Simple Test")
+    pygame.display.set_caption("Pygbag Ultra-Simple Test")
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 74)
     running = True
 
-    print("Simple Test Program Started")
+    print("Ultra-Simple Test Program Started. No fonts used.")
 
     while running:
         for event in pygame.event.get():
@@ -28,15 +27,12 @@ async def main():
 
         # 描画
         screen.fill(BLUE)
-        
-        text_surface = font.render("Pygbag Simple Test", True, WHITE)
-        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50))
-        screen.blit(text_surface, text_rect)
-
-        info_font = pygame.font.Font(None, 48)
-        info_surface = info_font.render("If you see this, Pygbag is working.", True, WHITE)
-        info_rect = info_surface.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50))
-        screen.blit(info_surface, info_rect)
+        # フォントを使わずに、画面中央に四角形を描画するだけ
+        rect_width = 400
+        rect_height = 200
+        rect_x = (SCREEN_WIDTH - rect_width) / 2
+        rect_y = (SCREEN_HEIGHT - rect_height) / 2
+        pygame.draw.rect(screen, RED, (rect_x, rect_y, rect_width, rect_height))
 
         pygame.display.flip()
         await asyncio.sleep(0)
