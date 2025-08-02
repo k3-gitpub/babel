@@ -64,7 +64,9 @@ jobs:
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
       # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        run: python -m pygbag --build .
+        # --pwa=0: PWA(Service Worker)を無効化し、モバイルブラウザでのキャッシュ問題を回避します。
+        # --build: 既存のビルドキャッシュを無視してクリーンビルドを実行します。
+        run: python -m pygbag --pwa=0 --build .
 
       # 7. ビルド成果物（Webサイトのファイル）をアップロードする
       - name: Upload artifact
