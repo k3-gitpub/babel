@@ -46,14 +46,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libffi-dev pkg-config
 
-      # 5. パッケージをインストールし、pygbagを開発版に更新
-      # PyPIの公式版をインストール後、--pwa=0オプションを持つ開発版を
-      # GitHubから直接インストールして上書きします。
+      # 5. パッケージをインストール (pygbagはGitHubから直接)
+      # requirements.txtからpygameをインストールし、--pwa=0オプションを持つ
+      # 開発版のpygbagをGitHubから直接インストールします。
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install --upgrade git+https://github.com/pmp-p/pygbag.git
+          pip install git+https://github.com/pmp-p/pygbag.git
 
       # 6. PygbagでWebアプリをビルドする
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
