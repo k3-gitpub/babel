@@ -56,7 +56,9 @@ jobs:
       # 注意: このコマンドは、リポジトリのルートに main.py があることを想定しています。
       # メインのPythonファイルが異なる場合 (例: game.py)、 'python -m pygbag --build game.py' のように変更してください。
       - name: Build with pygbag
-        run: python -m pygbag --build .
+        # --- テスト用: シンプルなテストプログラムをビルドする ---
+        # run: python -m pygbag --build . # 元のゲームをビルドする場合はこちらを有効化
+        run: python -m pygbag --build test_main.py
 
       # 7. PWAのService Workerを無効化 (キャッシュ問題の回避)
       # manifest.jsonは残し、Service Worker(pwa.js)のみを削除してキャッシュ問題を回避します。
