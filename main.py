@@ -167,7 +167,8 @@ class Game:
             if self.game_state == "WAITING_FOR_INPUT":
                 # どのイベントでも、初回入力であればオーディオを初期化し、ローディングを開始
                 if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
-                    self._initialize_audio()
+                    if not config.DISABLE_SOUND_FOR_DEBUG:
+                        self._initialize_audio()
                     self.game_state = "LOADING"
             elif self.game_state == "LOADING":
                 # ローディング中は入力を受け付けない

@@ -59,8 +59,9 @@ class AssetManager:
 
     def _collect_assets(self):
         """定義されたアセット情報を読み込みリストにまとめる。"""
-        for key, props in self.sound_definitions.items():
-            self.assets_to_load.append(('sound', key, props['path'], props['volume']))
+        if not config.DISABLE_SOUND_FOR_DEBUG:
+            for key, props in self.sound_definitions.items():
+                self.assets_to_load.append(('sound', key, props['path'], props['volume']))
 
         self.total_assets = len(self.assets_to_load)
         print(f"AssetManager: {self.total_assets}個のアセットを読み込みます。")
@@ -74,6 +75,9 @@ class AssetManager:
             return False
 
         asset_type, key, path, props = self.assets_to_load[self.loaded_assets]
+
+        # デバッグ用ログ: どのファイルを読み込もうとしているかコンソールに出力する
+        print(f"Loading asset {self.loaded_assets + 1}/{self.total_assets}: [{asset_type}] {key} at {path}")
 
         if asset_type == 'sound':
             if os.path.exists(path):
