@@ -115,6 +115,13 @@ class JumpingEnemy(Enemy):
 
     def draw(self, screen):
         """敵（円形）を描画する。親クラスのdrawをオーバーライド。"""
+        # --- パフォーマンス改善: 画面外のオブジェクトは描画しない ---
+        # screen.get_rect()は毎回新しいRectオブジェクトを生成するため、
+        # ループの外で一度だけ取得するのが理想的だが、クラス内ではここで取得するのが手軽。
+        screen_rect = screen.get_rect()
+        if not self.rect.colliderect(screen_rect):
+            return
+
         if self.state == "ALIVE":
             # 現在のスケールを反映した半径と中心を計算
             current_radius = (self.rect.width / 2)

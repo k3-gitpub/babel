@@ -90,6 +90,21 @@ class Cloud:
         """
         雲を画面に描画する。
         """
+        # --- パフォーマンス改善: 雲全体が画面外なら描画しない ---
+        # 雲を構成する全ての円を包含する矩形(Bounding Box)を計算する
+        if not self.puffs:
+            return
+
+        min_x = min(p[0][0] - p[1] for p in self.puffs)
+        max_x = max(p[0][0] + p[1] for p in self.puffs)
+        min_y = min(p[0][1] - p[1] for p in self.puffs)
+        max_y = max(p[0][1] + p[1] for p in self.puffs)
+        bounding_rect = pygame.Rect(min_x, min_y, max_x - min_x, max_y - min_y)
+
+        # 画面の矩形と衝突しなければ、以降の描画処理をすべてスキップ
+        if not bounding_rect.colliderect(screen.get_rect()):
+            return
+
         for puff_center, puff_radius in self.puffs:
             pygame.draw.circle(screen, config.WHITE, puff_center, puff_radius)
 

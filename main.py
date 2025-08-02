@@ -138,11 +138,7 @@ class Game:
             # --- 堅牢性の向上: 既に初期化されている場合は一度終了する ---
             # ブラウザの再読み込みなどで前の状態が残っている場合に対処
             if pygame.mixer.get_init():
-                print("Mixerが既に初期化されています。一度終了します。")
-                pygame.mixer.quit()
-
-            if pygame.mixer.get_init():
-                print("Mixerが既に初期化されています。一度終了します。")
+                print("Mixerが既に初期化されています。再初期化のために一度終了します。")
                 pygame.mixer.quit()
 
             pygame.mixer.init()

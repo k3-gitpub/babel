@@ -35,6 +35,14 @@ class Particle:
         if self.is_alive():
             life_ratio = self.lifetime / self.max_lifetime
             current_size = self.start_size * life_ratio + self.end_size * (1 - life_ratio)
+            if current_size < 1:
+                return
+
+            # --- パフォーマンス改善: 画面外のパーティクルは描画しない ---
+            particle_rect = pygame.Rect(self.pos.x - current_size, self.pos.y - current_size, current_size * 2, current_size * 2)
+            if not screen.get_rect().colliderect(particle_rect):
+                return
+
             pygame.draw.circle(screen, self.color, (int(self.pos.x), int(self.pos.y)), int(current_size))
 
     def is_alive(self):

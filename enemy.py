@@ -148,7 +148,7 @@ class Enemy:
             # 円を描画するための新しいSurfaceを作成
             max_radius = int((self.original_width / 2) * config.ENEMY_DEATH_EFFECT_MAX_RADIUS_MULTIPLIER)
             surface_size = max_radius * 2
-            effect_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
+            effect_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA).convert_alpha()
 
             # 色にアルファ値を適用
             effect_color = (*config.ENEMY_DEATH_EFFECT_COLOR, alpha)

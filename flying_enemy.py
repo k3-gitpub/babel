@@ -195,6 +195,13 @@ class FlyingEnemy:
 
     def draw(self, screen):
         """敵（三角形）を描画する。"""
+        # --- パフォーマンス改善: 画面外のオブジェクトは描画しない ---
+        # 描画する画像(self.image)は回転・拡縮されている可能性があるため、
+        # その都度get_rect()で現在の矩形を取得して判定するのが最も正確。
+        screen_rect = screen.get_rect()
+        if not self.image.get_rect(center=self.pos).colliderect(screen_rect):
+            return
+
         if self.state == "DYING":
             # 死亡エフェクトの描画 (Enemyクラスとほぼ同じロジック)
             progress = (pygame.time.get_ticks() - self.death_animation_start_time) / config.ENEMY_DEATH_EFFECT_DURATION
