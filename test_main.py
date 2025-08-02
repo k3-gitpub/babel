@@ -1,37 +1,24 @@
-import pygame
 import asyncio
 import sys
 
-# 画面サイズ
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-
-# 色
-BLUE = (66, 165, 245)
-RED = (211, 47, 47)
+# このプログラムはPygameを一切使用しません。
+# Pythonのコードがブラウザ上で実行され、コンソールに文字を出力できるか、という
+# 最も基本的な機能のみをテストします。
 
 async def main():
-    # Webブラウザとの互換性のため、ディスプレイモジュールだけを明示的に初期化
-    pygame.display.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Minimal Pygbag Test")
-    clock = pygame.time.Clock()
+    print("--- Hello World Test Program ---")
+    print("This test does not use Pygame.")
+    print("If you see this message in the developer console, the basic Python runtime is working.")
+
     running = True
-
+    count = 0
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        count += 1
+        print(f"Program is running... count: {count}")
+        # ブラウザがプログラムを終了しないように、ループを維持します。
+        await asyncio.sleep(1)
 
-        # 画面を青で塗りつぶし、中央に赤い四角形を描画
-        screen.fill(BLUE)
-        pygame.draw.rect(screen, RED, ((SCREEN_WIDTH - 100) / 2, (SCREEN_HEIGHT - 100) / 2, 100, 100))
-        pygame.display.flip()
-        await asyncio.sleep(0)
-        clock.tick(60)
-
-    pygame.quit()
-    sys.exit()
+    print("Program finished.")
 
 if __name__ == "__main__":
     asyncio.run(main())
