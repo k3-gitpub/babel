@@ -1,19 +1,20 @@
 import pygame
 import asyncio
-import config
-import traceback
+
+# --- 依存をなくすため、定数を直接定義 ---
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+BLUE = (66, 165, 245)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
 
 async def main():
-    """
-    モバイル環境でPygameのコア機能（表示とイベント）が動作するかを確認する最小テスト。
-    フォントやサウンドの読み込みを一切行わない。
-    """
     screen = None
     try:
         # --- ステップ1: ディスプレイの初期化のみ ---
         pygame.display.init()
-        screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-        pygame.display.set_caption("Mobile Core Test")
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("Ultimate Core Test")
         clock = pygame.time.Clock()
         print("Display initialized successfully.")
 
@@ -34,27 +35,23 @@ async def main():
 
             # --- 状態に応じて画面の色を変える ---
             if state == 0:
-                screen.fill(config.BLUE)
+                screen.fill(BLUE)
             elif state == 1:
-                screen.fill(config.GREEN)
+                screen.fill(GREEN)
 
             pygame.display.flip()
             await asyncio.sleep(0)
-            clock.tick(config.FPS)
+            clock.tick(60)
 
     except Exception as e:
-        # このブロックは、上記の最小限の処理ですら失敗した場合に実行される
-        print("--- A FATAL CORE INITIALIZATION ERROR OCCURRED ---")
-        traceback.print_exc()
-        # 失敗したことを示すために、画面を赤くする試み
         try:
             if screen is None:
-                screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-            screen.fill(config.RED)
+                screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+            screen.fill(RED)
             pygame.display.flip()
             while True: await asyncio.sleep(0.1)
         except Exception as e2:
-            print(f"FATAL: Could not even display the red error screen: {e2}")
+            pass # エラー表示すら失敗
 
 
 if __name__ == '__main__':
