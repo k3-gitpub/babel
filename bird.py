@@ -62,12 +62,12 @@ class Bird:
         pygame.draw.circle(self.original_image, config.BLACK, pupil_pos, pupil_radius)
         pygame.draw.circle(self.original_image, config.BLACK, eye_center_pos, eye_radius, config.BIRD_EYE_OUTLINE_WIDTH)
 
-    def update(self):
+    def update(self, gravity=config.GRAVITY):
         """弾の位置を更新する（物理演算）"""
         if not self.is_flying:
             return
 
-        self.velocity.y += config.GRAVITY
+        self.velocity.y += gravity
         self.pos += self.velocity
 
         # --- 巨大化効果のチェック ---

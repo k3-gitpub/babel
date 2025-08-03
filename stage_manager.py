@@ -9,14 +9,8 @@ class StageManager:
     def __init__(self):
         """StageManagerを初期化する。"""
         self.stages = difficulty_config.STAGES
-
-        # デバッグモードで、かつ開始ステージが設定ファイルに存在する場合、そのステージから開始する
-        if config.DEBUG and config.DEBUG_START_STAGE in self.stages:
-            self.current_stage = config.DEBUG_START_STAGE
-            print(f"StageManager initialized. Starting at debug stage: {self.current_stage}")
-        else:
-            self.current_stage = 1
-            print("StageManager initialized.")
+        self.current_stage = 1
+        print("StageManager initialized.")
 
     def get_current_stage_settings(self):
         """現在のステージの設定データを返す。"""
