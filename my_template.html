@@ -43,21 +43,40 @@
                 z-index: 1000;
             }
         </style>
+        <script>
+            // この関数は、ページのすべての要素（pygbagが生成するcanvasを含む）が
+            // 読み込まれた後に呼び出されます。
+            function setupInteractiveElements() {
+                const canvas = document.getElementById('canvas');
+                // canvasが見つからない場合は、エラーを防ぐために何もしません。
+                if (!canvas) {
+                    console.error("setupInteractiveElements: Canvas element not found.");
+                    return;
+                }
+
+                // ボタンを動的に生成します。
+                const button = document.createElement('button');
+                button.id = 'fullscreen-btn';
+                button.innerText = 'Full Screen';
+                
+                // ボタンがクリックされた時の動作を定義します。
+                button.onclick = () => {
+                    if (canvas.requestFullscreen) {
+                        canvas.requestFullscreen();
+                    } else if (canvas.webkitRequestFullscreen) { // Safari/iPhone用
+                        canvas.webkitRequestFullscreen();
+                    }
+                };
+                // ページにボタンを追加します。
+                document.body.appendChild(button);
+            }
+
+            // ページのロードが完了したら、上記のセットアップ関数を実行します。
+            window.addEventListener('load', setupInteractiveElements);
+        </script>
     </head>
     <body>
-        <button id="fullscreen-btn" onclick="goFullScreen()">Full Screen</button>
-        <script>
-            function goFullScreen() {
-                const canvas = document.getElementById('canvas');
-                if (canvas.requestFullscreen) {
-                    canvas.requestFullscreen();
-                } else if (canvas.webkitRequestFullscreen) { /* Safari */
-                    canvas.webkitRequestFullscreen();
-                }
-            }
-        </script>
-
-        <!-- pygbag placeholder for canvas and game scripts -->
+        <!-- bodyタグ内はpygbag専用とし、クリーンに保ちます -->
         {{PYGBAG_SCRIPTS}}
     </body>
 </html>
