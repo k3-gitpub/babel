@@ -44,22 +44,18 @@
             }
         </style>
         <script>
-            // この関数は、ページのすべての要素（pygbagが生成するcanvasを含む）が
-            // 読み込まれた後に呼び出されます。
             function setupInteractiveElements() {
                 const canvas = document.getElementById('canvas');
-                // canvasが見つからない場合は、エラーを防ぐために何もしません。
                 if (!canvas) {
-                    console.error("setupInteractiveElements: Canvas element not found.");
+                    // このケースはwaitForCanvasAndSetupで既にチェックされているはずですが、念のため
+                    console.error("setupInteractiveElements: Canvas element not found even after waiting.");
                     return;
                 }
 
-                // ボタンを動的に生成します。
                 const button = document.createElement('button');
                 button.id = 'fullscreen-btn';
                 button.innerText = 'Full Screen';
                 
-                // ボタンがクリックされた時の動作を定義します。
                 button.onclick = () => {
                     if (canvas.requestFullscreen) {
                         canvas.requestFullscreen();
@@ -67,12 +63,28 @@
                         canvas.webkitRequestFullscreen();
                     }
                 };
-                // ページにボタンを追加します。
                 document.body.appendChild(button);
             }
 
-            // ページのロードが完了したら、上記のセットアップ関数を実行します。
-            window.addEventListener('load', setupInteractiveElements);
+            // pygbagが動的にcanvasを生成するのを待つための、より堅牢な方法
+            function waitForCanvasAndSetup() {
+                const maxAttempts = 20; // 約10秒間試行 (20 * 500ms)
+                let attempts = 0;
+
+                const intervalId = setInterval(() => {
+                    const canvas = document.getElementById('canvas');
+                    if (canvas) {
+                        clearInterval(intervalId);
+                        setupInteractiveElements();
+                    } else if (++attempts > maxAttempts) {
+                        clearInterval(intervalId);
+                        console.error("Timed out waiting for canvas element to be created by pygbag.");
+                    }
+                }, 500); // 500ミリ秒ごとにチェック
+            }
+
+            // ページのロードが完了したら、canvasの監視を開始します。
+            window.addEventListener('load', waitForCanvasAndSetup);
         </script>
     </head>
     <body>
