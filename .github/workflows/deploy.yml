@@ -41,7 +41,7 @@ jobs:
         # --archive: 外部サーバーに依存しない、完全に自己完結したパッケージを生成します。
         # . (ドット) はカレントディレクトリをビルド対象とすることを示します。
         # pygbagは自動的にmain.pyを開始点として探します。
-        run: python -m pygbag --build --archive .
+        run: python -m pygbag --template my_template.html --build --archive .
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

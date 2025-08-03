@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- =============================================================== -->
+        <!-- この部分がキャッシュを無効化するための命令です -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        <!-- =============================================================== -->
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <title>{{ title }}</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #000;
+                color: #fff;
+                overflow: hidden;
+                touch-action: none;
+                -ms-touch-action: none;
+            }
+            canvas {
+                margin: 0;
+                padding: 0;
+                touch-action: none;
+                -ms-touch-action: none;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+        <script type="text/javascript" src="{{pygame_script}}"></script>
+    </body>
+</html>
