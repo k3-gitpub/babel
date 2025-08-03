@@ -1,36 +1,63 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <!-- =============================================================== -->
-        <!-- キャッシュを無効化するための命令です -->
+        <!-- Cache-Control Headers for preventing browser caching issues -->
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta http-equiv="Pragma" content="no-cache" />
         <meta http-equiv="Expires" content="0" />
-        <!-- =============================================================== -->
 
-        <!-- pygbagがcharset, viewport, titleなどを自動的に挿入する場所です -->
+        <!-- pygbag placeholder for title, charset, viewport etc. -->
         {{PYGBAG_METAS}}
 
         <style>
-            /* 基本的なスタイルリセット */
             body, html {
                 margin: 0;
                 padding: 0;
-                overflow: hidden; /* スクロールバーを非表示に */
+                overflow: hidden;
                 background-color: #000;
-                color: #fff;
             }
-            /* canvasを画面全体に広げ、アスペクト比を維持する */
             canvas#canvas {
                 position: absolute;
                 width: 100%;
                 height: 100%;
-                object-fit: contain; /* アスペクト比を保ちつつ画面に収める */
+                object-fit: contain; /* Keep aspect ratio */
+                /* For crisp pixel art */
+                image-rendering: -moz-crisp-edges;
+                image-rendering: -webkit-crisp-edges;
+                image-rendering: pixelated;
+                image-rendering: crisp-edges;
+            }
+            /* A simple fullscreen button */
+            #fullscreen-btn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-family: sans-serif;
+                font-size: 14px;
+                background-color: rgba(0, 0, 0, 0.6);
+                color: white;
+                border: 1px solid white;
+                border-radius: 5px;
+                cursor: pointer;
+                z-index: 1000;
             }
         </style>
     </head>
     <body>
-        <!-- pygbagがcanvasとゲームスクリプトを自動的に挿入する場所です -->
+        <button id="fullscreen-btn" onclick="goFullScreen()">Full Screen</button>
+        <script>
+            function goFullScreen() {
+                const canvas = document.getElementById('canvas');
+                if (canvas.requestFullscreen) {
+                    canvas.requestFullscreen();
+                } else if (canvas.webkitRequestFullscreen) { /* Safari */
+                    canvas.webkitRequestFullscreen();
+                }
+            }
+        </script>
+
+        <!-- pygbag placeholder for canvas and game scripts -->
         {{PYGBAG_SCRIPTS}}
     </body>
 </html>
