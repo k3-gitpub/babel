@@ -34,15 +34,13 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pygbag
+          pip install -r requirements.txt # requirements.txt に記載されたパッケージをインストール
 
       - name: Build with pygbag
         # --archive: 外部サーバーに依存しない、完全に自己完結したパッケージを生成します。
         # . (ドット) はカレントディレクトリをビルド対象とすることを示します。
         # pygbagは自動的にmain.pyを開始点として探します。
-        # --script-args defer: iPhone(Safari)での安定性向上のため、スクリプトの実行を遅延させます。
-        run: python -m pygbag --template my_template.html --build --archive --script-args defer .
+        run: python -m pygbag --template my_template.html --build --archive .
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
