@@ -7,8 +7,9 @@ class TitleScene:
     ステップ3用の最小限のタイトルシーンクラス。
     静的なテキストを描画するだけ。
     """
-    def __init__(self):
+    def __init__(self, asset_manager):
         """TitleSceneを初期化し、フォントを準備する。"""
+        self.asset_manager = asset_manager
         self.title_font = pygame.font.Font(None, 120)
         self.button_font = pygame.font.Font(None, 60)
 

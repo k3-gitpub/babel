@@ -15,13 +15,7 @@ class Game:
         # 基本的なPygameの初期化
         pygame.display.init()
         pygame.font.init()
-        # Web環境ではユーザーのインタラクション後にmixerを初期化するのが安全ですが、
-        # このステップではアセット読み込みのテストのため、先に初期化します。
-        try:
-            pygame.mixer.init()
-            print("Pygame mixer initialized successfully.")
-        except pygame.error as e:
-            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
+        self.mixer_initialized = False # 音声が初期化されたかのフラグ
 
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Step 4: Asset Loading Test")
@@ -37,15 +31,30 @@ class Game:
         # 「Click to Start」メッセージ用のフォント
         self.title_font = pygame.font.Font(None, 120)
 
+    def _initialize_audio(self):
+        """ユーザーの最初のインタラクションでオーディオシステムを初期化する。"""
+        if self.mixer_initialized:
+            return
+
+        print("ユーザーの初回入力により、オーディオシステムを初期化します。")
+        try:
+            pygame.mixer.init()
+            self.mixer_initialized = True
+            print("Pygame mixer initialized successfully.")
+        except pygame.error as e:
+            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
+            self.mixer_initialized = False
+
     async def _handle_events(self):
         """イベントを処理する。"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
 
-            # 入力待ち状態で、マウスクリックかキー入力があった場合
+            # 入力待ち状態で、マウスクリック、タッチ、キー入力があった場合
             if self.game_state == "WAITING_FOR_INPUT":
-                if event.type in [pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN]:
+                if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
+                    self._initialize_audio() # ★★★ 音声初期化をここで行う ★★★
                     print("Input detected! Changing state to LOADING.")
                     self.game_state = "LOADING"
                     self.loading_scene = LoadingScene(self.asset_manager)
@@ -58,7 +67,7 @@ class Game:
                 if action == "LOADING_COMPLETE":
                     print("Loading complete! Changing state to TITLE.")
                     self.game_state = "TITLE"
-                    self.title_scene = TitleScene()
+                    self.title_scene = TitleScene(self.asset_manager)
 
     def _draw_screen(self):
         """状態に応じて画面を描画する。"""
