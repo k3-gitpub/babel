@@ -2,105 +2,84 @@ import pygame
 import asyncio
 import config
 from ui_utils import draw_text
-from scene_title import TitleScene
-from asset_manager import AssetManager
-from loading_scene import LoadingScene
 
-class Game:
+class MobileTest:
     """
-    ゲームの骨格をテストするためのクラス。
-    状態管理と文字描画のみを実装する。
+    モバイルブラウザでの音声再生をテストするための最小クラス。
     """
     def __init__(self):
-        # 基本的なPygameの初期化
         pygame.display.init()
         pygame.font.init()
-        self.mixer_initialized = False # 音声が初期化されたかのフラグ
-
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-        pygame.display.set_caption("Step 4: Asset Loading Test")
+        pygame.display.set_caption("Mobile Sound Test")
         self.clock = pygame.time.Clock()
         self.running = True
-
-        # 状態管理
         self.game_state = "WAITING_FOR_INPUT"
-        self.title_scene = None
-        self.loading_scene = None
-        self.asset_manager = AssetManager()
-
-        # 「Click to Start」メッセージ用のフォント
-        self.title_font = pygame.font.Font(None, 120)
-
-    def _initialize_audio(self):
-        """ユーザーの最初のインタラクションでオーディオシステムを初期化する。"""
-        if self.mixer_initialized:
-            return
-
-        print("ユーザーの初回入力により、オーディオシステムを初期化します。")
-        try:
-            pygame.mixer.init()
-            self.mixer_initialized = True
-            print("Pygame mixer initialized successfully.")
-        except pygame.error as e:
-            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
-            self.mixer_initialized = False
+        self.font = pygame.font.Font(None, 100)
+        self.info_font = pygame.font.Font(None, 40)
+        self.sound = None
+        self.error_message = ""
 
     async def _handle_events(self):
-        """イベントを処理する。"""
+        """イベントを処理し、入力があった瞬間に音声処理を試みる。"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
 
-            # 入力待ち状態で、マウスクリック、タッチ、キー入力があった場合
             if self.game_state == "WAITING_FOR_INPUT":
                 if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
-                    self._initialize_audio() # ★★★ 音声初期化をここで行う ★★★
-                    print("Input detected! Changing state to LOADING.")
-                    self.game_state = "LOADING"
-                    self.loading_scene = LoadingScene(self.asset_manager)
-
-    async def _update_state(self):
-        """ゲームの状態に基づいてロジックを更新する。"""
-        if self.game_state == "LOADING":
-            if self.loading_scene:
-                action = self.loading_scene.update()
-                if action == "LOADING_COMPLETE":
-                    print("Loading complete! Changing state to TITLE.")
-                    self.game_state = "TITLE"
-                    self.title_scene = TitleScene(self.asset_manager)
+                    print("Input detected! Attempting to initialize audio and play sound.")
+                    try:
+                        # --- 音声関連の処理をすべてこのイベントハンドラ内で完結させる ---
+                        pygame.mixer.init()
+                        print("pygame.mixer.init() successful.")
+                        
+                        sound_path = config.SE_UI_CLICK_PATH
+                        print(f"Attempting to load sound: {sound_path}")
+                        self.sound = pygame.mixer.Sound(sound_path)
+                        print("Sound loaded successfully.")
+                        
+                        self.sound.play()
+                        print("Sound played successfully.")
+                        
+                        self.game_state = "SUCCESS"
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                        self.error_message = str(e)
+                        self.game_state = "FAILURE"
 
     def _draw_screen(self):
         """状態に応じて画面を描画する。"""
         if self.game_state == "WAITING_FOR_INPUT":
             self.screen.fill(config.BLUE)
-            # テキストを点滅させる
-            if (pygame.time.get_ticks() // 500) % 2 == 0:
-                draw_text(self.screen, "Click to Start", self.title_font, config.WHITE,
-                          (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), config.BLACK, 3)
-        elif self.game_state == "LOADING":
-            self.screen.fill(config.BLUE)
-            if self.loading_scene:
-                self.loading_scene.draw(self.screen)
-        elif self.game_state == "TITLE":
-            # タイトルシーンを描画
-            self.screen.fill(config.BLUE)
-            if self.title_scene:
-                self.title_scene.draw(self.screen)
+            draw_text(self.screen, "Tap to Test Sound", self.font, config.WHITE,
+                      (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), config.BLACK, 3)
+        elif self.game_state == "SUCCESS":
+            self.screen.fill(config.GREEN)
+            draw_text(self.screen, "Success!", self.font, config.WHITE,
+                      (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), config.BLACK, 3)
+            draw_text(self.screen, "Sound played.", self.info_font, config.WHITE,
+                      (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 + 80), config.BLACK, 2)
+        elif self.game_state == "FAILURE":
+            self.screen.fill(config.RED)
+            draw_text(self.screen, "Failure!", self.font, config.WHITE,
+                      (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 - 40), config.BLACK, 3)
+            draw_text(self.screen, self.error_message, self.info_font, config.WHITE,
+                      (config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2 + 40), config.BLACK, 2)
 
         pygame.display.flip()
 
     async def run(self):
-        """ゲームのメインループ。"""
+        """メインループ。"""
         while self.running:
             await self._handle_events()
-            await self._update_state()
             self._draw_screen()
             await asyncio.sleep(0)
             self.clock.tick(config.FPS)
 
 async def main():
-    game = Game()
-    await game.run()
+    test = MobileTest()
+    await test.run()
 
 if __name__ == '__main__':
     asyncio.run(main())
