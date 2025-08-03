@@ -2,35 +2,35 @@
 <html>
     <head>
         <!-- =============================================================== -->
-        <!-- この部分がキャッシュを無効化するための命令です -->
+        <!-- キャッシュを無効化するための命令です -->
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta http-equiv="Pragma" content="no-cache" />
         <meta http-equiv="Expires" content="0" />
         <!-- =============================================================== -->
 
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-        <title>{{ title }}</title>
+        <!-- pygbagがcharset, viewport, titleなどを自動的に挿入する場所です -->
+        {{PYGBAG_METAS}}
+
         <style>
-            body {
+            /* 基本的なスタイルリセット */
+            body, html {
                 margin: 0;
                 padding: 0;
+                overflow: hidden; /* スクロールバーを非表示に */
                 background-color: #000;
                 color: #fff;
-                overflow: hidden;
-                touch-action: none;
-                -ms-touch-action: none;
             }
-            canvas {
-                margin: 0;
-                padding: 0;
-                touch-action: none;
-                -ms-touch-action: none;
+            /* canvasを画面全体に広げ、アスペクト比を維持する */
+            canvas#canvas {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                object-fit: contain; /* アスペクト比を保ちつつ画面に収める */
             }
         </style>
     </head>
     <body>
-        <canvas id="canvas"></canvas>
-        <script defer type="text/javascript" src="{{pygame_script}}"></script>
+        <!-- pygbagがcanvasとゲームスクリプトを自動的に挿入する場所です -->
+        {{PYGBAG_SCRIPTS}}
     </body>
 </html>
