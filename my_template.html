@@ -23,90 +23,10 @@
                 height: 100%;
                 object-fit: contain; /* Keep aspect ratio */
             }
-
-            /* --- ローディングインジケーターのスタイル --- */
-            #loading-indicator {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                background-color: #42a5f5; /* pygbagのロード画面の色 */
-                color: white;
-                font-family: sans-serif;
-                font-size: 1.2em;
-                z-index: 9999;
-                transition: opacity 0.5s ease; /* フェードアウト用 */
-            }
-            .spinner {
-                border: 8px solid rgba(255, 255, 255, 0.3);
-                border-top: 8px solid #ffffff;
-                border-radius: 50%;
-                width: 60px;
-                height: 60px;
-                animation: spin 1s linear infinite;
-                margin-bottom: 20px;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
         </style>
     </head>
     <body>
-        <!-- 最初から表示されるローディング画面 -->
-        <div id="loading-indicator">
-            <div class="spinner"></div>
-            <p>Loading Game...</p>
-        </div>
-
-        <!-- pygbagがゲーム本体をここに挿入します -->
+        <!-- pygbagがコンテンツを挿入するために、bodyタグ内は空にしておきます -->
         {{PYGBAG_SCRIPTS}}
-
-        <script>
-            // pygbagがcanvasを生成するのを待ってローディング画面を非表示にする、より堅牢な方法
-            document.addEventListener('DOMContentLoaded', () => {
-                const loadingIndicator = document.getElementById('loading-indicator');
-
-                // タイムアウト処理: 15秒経ってもcanvasが生成されない場合、
-                // ローディング画面を非表示にしてエラーをコンソールに出力する
-                const timeoutId = setTimeout(() => {
-                    if (loadingIndicator) {
-                        loadingIndicator.innerHTML = "<p>Error: Game failed to load.</p>";
-                    }
-                    console.error("Timed out waiting for pygbag to create canvas element.");
-                }, 15000);
-
-                // DOMの変更を監視するMutationObserverをセットアップ
-                const observer = new MutationObserver((mutationsList, obs) => {
-                    for (const mutation of mutationsList) {
-                        if (mutation.type === 'childList') {
-                            for (const node of mutation.addedNodes) {
-                                // canvas要素が追加されたかチェック
-                                if (node.nodeName === 'CANVAS' && node.id === 'canvas') {
-                                    // 発見！タイマーと監視を停止
-                                    clearTimeout(timeoutId);
-                                    obs.disconnect();
-
-                                    // ローディング画面をフェードアウトさせて削除
-                                    if (loadingIndicator) {
-                                        loadingIndicator.style.opacity = '0';
-                                        setTimeout(() => loadingIndicator.remove(), 500);
-                                    }
-                                    return; // 処理完了
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // body要素の子要素の変更（追加・削除）の監視を開始
-                observer.observe(document.body, { childList: true });
-            });
-        </script>
     </body>
 </html>
