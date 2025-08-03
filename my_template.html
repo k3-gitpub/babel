@@ -68,18 +68,44 @@
         {{PYGBAG_SCRIPTS}}
 
         <script>
-            // pygbagがcanvasを生成するのを待ってローディング画面を非表示にする
+            // pygbagがcanvasを生成するのを待ってローディング画面を非表示にする、より堅牢な方法
             document.addEventListener('DOMContentLoaded', () => {
-                const intervalId = setInterval(() => {
-                    if (document.getElementById('canvas')) {
-                        clearInterval(intervalId);
-                        const indicator = document.getElementById('loading-indicator');
-                        if (indicator) {
-                            indicator.style.opacity = '0';
-                            setTimeout(() => indicator.remove(), 500); // 0.5秒後にフェードアウトして要素を削除
+                const loadingIndicator = document.getElementById('loading-indicator');
+
+                // タイムアウト処理: 15秒経ってもcanvasが生成されない場合、
+                // ローディング画面を非表示にしてエラーをコンソールに出力する
+                const timeoutId = setTimeout(() => {
+                    if (loadingIndicator) {
+                        loadingIndicator.innerHTML = "<p>Error: Game failed to load.</p>";
+                    }
+                    console.error("Timed out waiting for pygbag to create canvas element.");
+                }, 15000);
+
+                // DOMの変更を監視するMutationObserverをセットアップ
+                const observer = new MutationObserver((mutationsList, obs) => {
+                    for (const mutation of mutationsList) {
+                        if (mutation.type === 'childList') {
+                            for (const node of mutation.addedNodes) {
+                                // canvas要素が追加されたかチェック
+                                if (node.nodeName === 'CANVAS' && node.id === 'canvas') {
+                                    // 発見！タイマーと監視を停止
+                                    clearTimeout(timeoutId);
+                                    obs.disconnect();
+
+                                    // ローディング画面をフェードアウトさせて削除
+                                    if (loadingIndicator) {
+                                        loadingIndicator.style.opacity = '0';
+                                        setTimeout(() => loadingIndicator.remove(), 500);
+                                    }
+                                    return; // 処理完了
+                                }
+                            }
                         }
                     }
-                }, 100); // 0.1秒ごとにチェック
+                });
+
+                // body要素の子要素の変更（追加・削除）の監視を開始
+                observer.observe(document.body, { childList: true });
             });
         </script>
     </body>
