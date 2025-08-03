@@ -10,7 +10,8 @@ class DataManager:
     """
     def __init__(self, filename="save_data.json"):
         self.filename = filename
-        self.is_web = platform.system() == "Emscripten"
+        # self.is_web = platform.system() == "Emscripten"
+        self.is_web = False # iPhoneでのテストのため、Webストレージを強制的に無効化
         if self.is_web:
             print("DataManager: Web環境を検出。ブラウザのストレージを使用します。")
         else:
