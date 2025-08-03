@@ -2,10 +2,12 @@ import pygame
 import asyncio
 import config
 from ui_utils import draw_text
+import traceback # エラーの詳細情報を取得するために追加
 
 class MobileTest:
     """
     モバイルブラウザでの音声再生をテストするための最小クラス。
+    （このクラスの中身は前回と同じです）
     """
     def __init__(self):
         pygame.display.init()
@@ -21,7 +23,6 @@ class MobileTest:
         self.error_message = ""
 
     async def _handle_events(self):
-        """イベントを処理し、入力があった瞬間に音声処理を試みる。"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -30,7 +31,6 @@ class MobileTest:
                 if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN]:
                     print("Input detected! Attempting to initialize audio and play sound.")
                     try:
-                        # --- 音声関連の処理をすべてこのイベントハンドラ内で完結させる ---
                         pygame.mixer.init()
                         print("pygame.mixer.init() successful.")
                         
@@ -49,7 +49,6 @@ class MobileTest:
                         self.game_state = "FAILURE"
 
     def _draw_screen(self):
-        """状態に応じて画面を描画する。"""
         if self.game_state == "WAITING_FOR_INPUT":
             self.screen.fill(config.BLUE)
             draw_text(self.screen, "Tap to Test Sound", self.font, config.WHITE,
@@ -70,7 +69,6 @@ class MobileTest:
         pygame.display.flip()
 
     async def run(self):
-        """メインループ。"""
         while self.running:
             await self._handle_events()
             self._draw_screen()
@@ -78,8 +76,56 @@ class MobileTest:
             self.clock.tick(config.FPS)
 
 async def main():
-    test = MobileTest()
-    await test.run()
+    """
+    メインの実行部分。ここでエラーを捕捉し、画面に表示する。
+    """
+    try:
+        # 通常通りゲームを実行
+        test = MobileTest()
+        await test.run()
+    except Exception as e:
+        # ★★★ もしプログラムのどこかでエラーが起きたら、ここが実行される ★★★
+        print("--- A FATAL ERROR OCCURRED ---")
+        traceback.print_exc() # コンソールに詳細なエラー情報を出力
+        print("-----------------------------")
+
+        # 画面にエラーを表示する試み
+        try:
+            # Pygameが初期化されていなくても、ここで初期化を試みる
+            if not pygame.display.get_init(): pygame.display.init()
+            if not pygame.font.get_init(): pygame.font.init()
+
+            screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+            screen.fill(config.RED) # 背景を赤に
+
+            font = pygame.font.Font(None, 32)
+            font_small = pygame.font.Font(None, 24)
+
+            # エラーメッセージを整形して描画
+            error_message = f"FATAL ERROR: {e}"
+            # 長いメッセージを折り返す
+            lines = [error_message[i:i+80] for i in range(0, len(error_message), 80)]
+            
+            y = 50
+            draw_text(screen, "An error occurred and the game stopped.", font, config.WHITE, (config.SCREEN_WIDTH/2, y))
+            y += 50
+
+            for line in lines:
+                draw_text(screen, line, font_small, config.WHITE, (config.SCREEN_WIDTH/2, y))
+                y += 30
+
+            pygame.display.flip()
+
+            # ユーザーが確認できるよう、エラー画面を表示し続ける
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT: return
+                await asyncio.sleep(0.1)
+
+        except Exception as e2:
+            # エラー画面の表示すら失敗した場合
+            print(f"Could not display the error on screen: {e2}")
+
 
 if __name__ == '__main__':
     asyncio.run(main())
