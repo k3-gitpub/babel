@@ -4,15 +4,9 @@ from ui_utils import draw_text
 
 class LoadingScene:
     """
-    ゲームのアセット読み込み中に表示されるローディング画面を管理するクラス。
+    アセット読み込み中に表示されるローディング画面を管理するクラス。
     """
-    def __init__(self, ui_manager, asset_manager):
-        """
-        LoadingSceneを初期化する。
-        :param ui_manager: UI描画に使用するUIManagerのインスタンス
-        :param asset_manager: アセットの読み込み状況を管理するAssetManagerのインスタンス
-        """
-        self.ui_manager = ui_manager
+    def __init__(self, asset_manager):
         self.asset_manager = asset_manager
         self.title_font = pygame.font.Font(None, 72)
         self.progress_font = pygame.font.Font(None, 36)
@@ -45,8 +39,3 @@ class LoadingScene:
         progress_width = bar_width * progress
         pygame.draw.rect(screen, config.WHITE, (bar_x, bar_y, progress_width, bar_height), border_radius=5)
         pygame.draw.rect(screen, config.BLACK, (bar_x, bar_y, bar_width, bar_height), 2, border_radius=5)
-
-        percent_text = f"{int(progress * 100)}%"
-        draw_text(screen, percent_text, self.progress_font, config.BLACK,
-                  (config.SCREEN_WIDTH / 2, bar_y + bar_height / 2))
-

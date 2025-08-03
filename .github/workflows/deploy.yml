@@ -39,8 +39,9 @@ jobs:
 
       - name: Build with pygbag
         # --archive: 外部サーバーに依存しない、完全に自己完結したパッケージを生成します。
-        # test_main.py: ビルド対象のファイルを指定します。
-        run: python -m pygbag --build --archive test_main.py
+        # . (ドット) はカレントディレクトリをビルド対象とすることを示します。
+        # pygbagは自動的にmain.pyを開始点として探します。
+        run: python -m pygbag --build --archive .
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
