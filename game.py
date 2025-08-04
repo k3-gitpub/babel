@@ -88,6 +88,9 @@ class Game:
 
             # AudioManagerが作成されたら、それを必要とする他のオブジェクトに渡す
             self.title_scene.audio_manager = self.audio_manager
+            # GameLogicManagerにも渡す
+            if hasattr(self, 'game_logic_manager'):
+                self.game_logic_manager.audio_manager = self.audio_manager
 
         except pygame.error as e:
             print(f"警告: Pygame mixerの初期化に失敗しました: {e}")

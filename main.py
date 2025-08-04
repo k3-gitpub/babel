@@ -1,27 +1,17 @@
-# Copyright 2025 k3
-# This software is released under the MIT License.
-# https://opensource.org/licenses/MIT
+import asyncio
 
-import asyncio # Webアプリ(Pygbag)化のために追加
-from game import Game
-
-print("--- EXECUTING main.py ---")
+print("--- EXECUTING test_pygbag.py ---")
+print("If you can see this message, pygbag's basic functions are working!")
 
 async def main():
-    """
-    ゲームを起動するための非同期メイン関数。
-    Webビルド時にアセットを登録する処理もここで行う。
-    """
-    # --- Webビルド(pygbag)のためのアセット登録と初期化 ---
-    try:
-        from pygbag import preloader
-        await preloader.run(log_missing=True)
-    except ImportError:
-        # pygbagがインストールされていないローカル実行環境では何もしない
-        pass
+    print("Async main function has started.")
+    counter = 0
+    while counter < 10:
+        print(f"Loop count: {counter}")
+        await asyncio.sleep(1)
+        counter += 1
+    print("Test finished.")
 
-    game = Game()
-    await game.run()
-
-if __name__ == '__main__':
+if __name__ == "__main__":
+    print("Starting asyncio event loop.")
     asyncio.run(main())
