@@ -28,15 +28,7 @@ class Game:
     def __init__(self, start_stage=None):
         """ゲームの初期化。開始ステージを指定できる。"""
         pygame.init()
-        # mixerの初期化。Webアプリ化で失敗することがあるため、try-exceptで囲む
-        try:
-            pygame.mixer.init()
-            print("Pygame mixer initialized successfully.")
-            self.mixer_initialized = True
-        except pygame.error as e:
-            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
-            self.mixer_initialized = False
-
+        
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption("Babel's Tower Shooter")
         self.clock = pygame.time.Clock()
@@ -57,14 +49,10 @@ class Game:
         self.high_score = save_data.get("high_score", 0)
         self.best_combo = save_data.get("best_combo", 0)
         self.best_tower_height = save_data.get("best_tower_height", 0)
-        sound_enabled = save_data.get("sound_enabled", True)
-
-        # オーディオマネージャーのインスタンスを作成
-        if self.mixer_initialized:
-            self.audio_manager = AudioManager(initial_enabled=sound_enabled)
-        else:
-            self.audio_manager = None
-
+        self.sound_enabled_setting = save_data.get("sound_enabled", True)
+        self.mixer_initialized = False
+        self.audio_manager = None
+        
         # スリングショットのX座標と、タワーの初期の高さを定義
         self.slingshot_x = config.SLINGSHOT_X
         self.initial_tower_top_y = config.GROUND_Y - (config.TOWER_INITIAL_BLOCKS * config.TOWER_BLOCK_HEIGHT)
@@ -83,6 +71,22 @@ class Game:
         else:
             # 通常はタイトル画面から開始
             self.game_state = "TITLE"
+
+    def _initialize_audio(self):
+        """
+        ユーザーの最初のインタラクション後にオーディオを初期化する。
+        Webブラウザの自動再生ポリシーを回避するため。
+        """
+        if self.mixer_initialized:
+            return # すでに初期化済み
+
+        try:
+            pygame.mixer.init()
+            print("Pygame mixer initialized successfully.")
+            self.mixer_initialized = True
+            self.audio_manager = AudioManager(initial_enabled=self.sound_enabled_setting)
+        except pygame.error as e:
+            print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
 
     def _setup_level(self, tower_top_y):
         """
@@ -137,6 +141,11 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+            # 最初のユーザー入力でオーディオを初期化する
+            if not self.mixer_initialized and (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN or event.type == pygame.KEYDOWN):
+                print("First user interaction detected. Initializing audio...")
+                self._initialize_audio()
 
             if self.game_state == "TITLE":
                 action = self.title_scene.process_event(event)

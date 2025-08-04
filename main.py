@@ -7,7 +7,21 @@ from game import Game
 
 print("--- EXECUTING main.py ---")
 
-if __name__ == '__main__':
+async def main():
+    """
+    ゲームを起動するための非同期メイン関数。
+    Webビルド時にアセットを登録する処理もここで行う。
+    """
+    # --- Webビルド(pygbag)のためのアセット登録と初期化 ---
+    try:
+        from pygbag import preloader
+        await preloader.run(log_missing=True)
+    except ImportError:
+        # pygbagがインストールされていないローカル実行環境では何もしない
+        pass
+
     game = Game()
-    # Gameクラスの非同期メソッドrun()を実行
-    asyncio.run(game.run())
+    await game.run()
+
+if __name__ == '__main__':
+    asyncio.run(main())
