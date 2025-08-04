@@ -11,3 +11,4 @@
 - ハートを取るとタワーが高くなります。
 
 https://note.com/lush_clover5338/n/ncc3485a99e94
+Netlify test
