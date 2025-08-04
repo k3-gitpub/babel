@@ -3,7 +3,6 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FPS = 60
 DEBUG = True # デバッグモードのフラグ。リリース時にはFalseに設定
-DEBUG_START_STAGE = 1 # デバッグモード時に開始するステージ番号
 
 # 色の定義
 WHITE = (255, 255, 255)
@@ -69,6 +68,9 @@ MAX_PULL_DISTANCE = 100 # スリングショットから引っ張れる最大距
 MIN_PULL_DISTANCE_TO_LAUNCH = 20 # 発射するために最低限必要なドラッグ距離
 BIRD_DEFAULT_RADIUS = 20 # 弾の初期半径
 SLINGSHOT_OFFSET_Y = -20 # 塔のてっぺんからのオフセット（負の値で上に）
+
+# ドラッグ操作の誤認識防止
+DRAG_RELEASE_DELAY = 100 # リリース後、この時間(ms)内に再プレスがなければ発射を確定する
 
 # スリングショットの支柱設定
 SLINGSHOT_POST_WIDTH = 10
@@ -366,8 +368,8 @@ SIZE_UP_ITEM_OUTLINE_COLOR = BLACK
 SIZE_UP_ITEM_OUTLINE_WIDTH = 2
 
 # アイテム効果設定
-SPEED_BOOST_MULTIPLIER = 2.0 # 速度の増加倍率
-SIZE_BOOST_DURATION = 5000 # 巨大化の持続時間 (ms)
+SPEED_BOOST_ADDITION = 15.0 # 速度の加算値
+SIZE_BOOST_DURATION = 500000 # 巨大化の持続時間 (ms)
 
 # ハート取得パーティクルエフェクトの設定
 PARTICLE_COUNT_ON_HEART_COLLECT = 25 # ハート取得時に出現するパーティクルの数

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Cache-Control Headers for preventing browser caching issues -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+
+        <!-- pygbag placeholder for title, charset, viewport etc. -->
+        {{PYGBAG_METAS}}
+
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color: #000;
+                color: #fff; /* デフォルトの文字色を白に */
+                font-family: sans-serif;
+            }
+            /* テスト用のタイトルを追加 */
+            h1#test-title {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                z-index: 1000; /* プログレスバーより手前に表示 */
+            }
+            /* プログレスバーのスタイルをカスタマイズ */
+            #progress {
+                border: 1px solid #aaa !important; /* 枠線の色 */
+            }
+            #progress-bar {
+                background-color: #4CAF50 !important; /* バーの色を緑に */
+            }
+            #progress-text {
+                color: #FFFFFF !important; /* テキストの色を白に */
+            }
+            /* pygbagが生成するcanvasを画面にフィットさせるためのスタイル */
+            canvas#canvas { 
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                object-fit: contain; /* Keep aspect ratio */
+            }
+        </style>
+    </head>
+    <body>
+        <h1 id="test-title">Babel's Tower - Loading...</h1>
+        <!-- pygbagがコンテンツを挿入するために、bodyタグ内は空にしておきます -->
+        {{PYGBAG_SCRIPTS}}
+    </body>
+</html>

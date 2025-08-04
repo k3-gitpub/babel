@@ -1,0 +1,18 @@
+{
+    "defaults":
+    {
+        "colours":
+        {
+            "normal_text": "#FFFFFF",
+            "dark_bg": "#202020"
+        }
+    },
+    "label":
+    {
+        "colours":
+        {
+            "normal_text": "#FFFFFF",
+            "normal_bg": "@dark_bg"
+        }
+    }
+}

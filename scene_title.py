@@ -48,6 +48,9 @@ class TitleScene:
         self.trajectory_points = []
         self.mouse_pos = pygame.math.Vector2(0, 0)
         self.show_drag_indicator = True # DRAG表示用のフラグ
+        self.is_release_pending = False # リリース待機中フラグ
+        self.release_pending_start_time = 0 # リリース待機開始時間
+        self.pending_launch_vector = None # 発射待機中のベクトル
         self.last_activity_time = pygame.time.get_ticks() # 最後の入力やボールリセットの時間
         self.drag_start_pos = None # ドラッグ開始位置を記録
         self.was_bird_flying = False # 前フレームでボールが飛んでいたか
@@ -132,12 +135,17 @@ class TitleScene:
                     self.audio_manager.toggle_enabled()
                 return "TOGGLE_SOUND"
 
+            # リリース待機中に再度プレスされたら、ドラッグを再開
+            elif self.is_release_pending:
+                self.is_release_pending = False
+                self.is_dragging = True
+                print("Title Scene: Release cancelled, resuming drag.")
+
             # UI以外の場所をタッチしてドラッグ開始
             elif not self.bird.is_flying:
                 self.is_dragging = True
                 self.drag_start_pos = pygame.math.Vector2(pos) # タッチ開始点を記録
                 self.mouse_pos.x, self.mouse_pos.y = pos
-                self.show_drag_indicator = False # ドラッグを開始したら非表示に
                 self.last_activity_time = pygame.time.get_ticks()
 
         # 2. ドラッグ中の移動処理
@@ -147,16 +155,12 @@ class TitleScene:
 
         # 3. リリース処理
         if self.is_dragging and ((event.type == pygame.MOUSEBUTTONUP and event.button == 1) or event.type == pygame.FINGERUP):
-            pull_distance = self.slingshot_pos.distance_to(self.bird.pos)
             self.is_dragging = False
-            if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
-                launch_vector = self.slingshot_pos - self.bird.pos
-                self.bird.launch(launch_vector)
-                self.last_activity_time = pygame.time.get_ticks()
-            else:
-                self.bird.cancel_launch()
-                print("Title Scene: Pull distance too short, launch cancelled.")
-            self.trajectory_points.clear() # どちらの場合も軌道は消す
+            self.is_release_pending = True
+            self.release_pending_start_time = pygame.time.get_ticks()
+            # 発射待機中のベクトルを保存
+            self.pending_launch_vector = self.slingshot_pos - self.bird.pos
+            print("Title Scene: Release pending...")
 
         return None
 
@@ -170,12 +174,28 @@ class TitleScene:
         self.was_bird_flying = self.bird.is_flying
 
         # 入力待機状態で一定時間経過したら、DRAG表示を再度有効にする
-        if not self.is_dragging and not self.bird.is_flying:
+        if not self.is_dragging and not self.is_release_pending and not self.bird.is_flying:
             if current_time - self.last_activity_time > config.DRAG_PROMPT_DELAY:
                 self.show_drag_indicator = True
+        else:
+            self.show_drag_indicator = False
+
+        # --- リリース待機処理 ---
+        if self.is_release_pending and current_time - self.release_pending_start_time > config.DRAG_RELEASE_DELAY:
+            self.is_release_pending = False
+            pull_distance = self.pending_launch_vector.length()
+            if pull_distance > config.MIN_PULL_DISTANCE_TO_LAUNCH:
+                print("Title Scene: Launch confirmed.")
+                self.bird.launch(self.pending_launch_vector)
+                self.last_activity_time = pygame.time.get_ticks()
+            else:
+                print("Title Scene: Pull distance too short, launch cancelled.")
+                self.bird.cancel_launch()
+            self.pending_launch_vector = None
+            self.trajectory_points.clear()
 
         # --- ドラッグ中の処理を追加 ---
-        if self.is_dragging:
+        if self.is_dragging or self.is_release_pending:
             # ドラッグ開始点からのベクトルを計算
             drag_vector = self.mouse_pos - self.drag_start_pos
             # スリングショットの位置に、ドラッグベクトルを加算してボールを配置（直感的な引っ張り操作）
@@ -231,7 +251,7 @@ class TitleScene:
         pygame.draw.rect(screen, config.SLINGSHOT_POST_COLOR, post_rect)
         pygame.draw.rect(screen, config.BLACK, post_rect, 2)
 
-        if self.is_dragging:
+        if self.is_dragging or self.is_release_pending:
             for point in self.trajectory_points:
                 pygame.draw.circle(screen, config.WHITE, (int(point.x), int(point.y)), config.TRAJECTORY_POINT_RADIUS)
 
@@ -240,7 +260,7 @@ class TitleScene:
         self.bird.draw(screen)
 
         # --- DRAG表示 (点滅) ---
-        if self.show_drag_indicator and not self.is_dragging and not self.bird.is_flying:
+        if self.show_drag_indicator:
             drag_text_pos = (self.bird.pos.x, self.bird.pos.y - self.bird.radius - 40)
             self.ui_manager.draw_blinking_text(
                 "DRAG",

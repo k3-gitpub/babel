@@ -62,12 +62,12 @@ class Bird:
         pygame.draw.circle(self.original_image, config.BLACK, pupil_pos, pupil_radius)
         pygame.draw.circle(self.original_image, config.BLACK, eye_center_pos, eye_radius, config.BIRD_EYE_OUTLINE_WIDTH)
 
-    def update(self):
+    def update(self, gravity=config.GRAVITY):
         """弾の位置を更新する（物理演算）"""
         if not self.is_flying:
             return
 
-        self.velocity.y += config.GRAVITY
+        self.velocity.y += gravity
         self.pos += self.velocity
 
         # --- 巨大化効果のチェック ---
@@ -109,9 +109,13 @@ class Bird:
         self.launched_upwards = self.velocity.y < 0
 
     def apply_speed_boost(self):
-        """スピードアップアイテムの効果を適用する。"""
-        self.velocity *= config.SPEED_BOOST_MULTIPLIER
-        print(f"スピードブースト！ 速度が {config.SPEED_BOOST_MULTIPLIER}倍に。")
+        """スピードアップアイテムの効果を適用する。速度ベクトルに固定値の速さを加算する。"""
+        if self.velocity.length_squared() > 0: # 停止している場合は何もしない
+            # 現在の進行方向の単位ベクトルを取得
+            direction = self.velocity.normalize()
+            # 単位ベクトルに加算値を掛けたものを、現在の速度に加算する
+            self.velocity += direction * config.SPEED_BOOST_ADDITION
+            print(f"スピードブースト！ 速度が {config.SPEED_BOOST_ADDITION} 加算された。")
 
     def apply_size_boost(self):
         """巨大化アイテムの効果を適用する。"""
