@@ -85,6 +85,10 @@ class Game:
             print("Pygame mixer initialized successfully.")
             self.mixer_initialized = True
             self.audio_manager = AudioManager(initial_enabled=self.sound_enabled_setting)
+
+            # AudioManagerが作成されたら、それを必要とする他のオブジェクトに渡す
+            self.title_scene.audio_manager = self.audio_manager
+
         except pygame.error as e:
             print(f"警告: Pygame mixerの初期化に失敗しました: {e}")
 
