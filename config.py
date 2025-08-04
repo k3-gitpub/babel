@@ -27,8 +27,8 @@ BOUNCINESS = 0.5 # 反発係数（0に近いほど跳ねない）
 # オーディオ設定
 BGM_VOLUME = 0.2 # BGMの音量 (0.0 ~ 1.0)
 BGM_FADEOUT_MS = 500 # BGM切り替え時のフェードアウト時間 (ミリ秒)
-BGM_NORMAL_PATH = "assets/audio/.ogg" # 通常BGMのパス
-BGM_BOSS_PATH = "assets/audio/.ogg" # ボス戦BGMのパス
+BGM_NORMAL_PATH = "assets/audio/bgm_normal.ogg" # 通常BGMのパス
+BGM_BOSS_PATH = "assets/audio/bgm_boss.ogg" # ボス戦BGMのパス
 SE_VOLUME = 0.4 # SEの音量 (0.0 ~ 1.0)
 
 # コンボヒット音の設定
@@ -52,7 +52,7 @@ SE_ENEMY_DEATH_PATH = "assets/audio/explosion.ogg" # 敵の死亡SE
 SE_ENEMY_HIT_PATH = "assets/audio/dead.ogg" # 敵ヒットSE (死亡しなかった場合)
 SE_TOWER_DAMAGE_PATH = "assets/audio/tower_damage.ogg" # タワーの被ダメージSE
 SE_HEART_COLLECT_PATH = "assets/audio/heart_collect.ogg" # ハート取得SE
-SE_STAGE_START_PATH = "assets/audio/.ogg" # ステージ開始SE
+SE_STAGE_START_PATH = "assets/audio/stage_start.ogg" # ステージ開始SE
 SE_SPEED_UP_COLLECT_PATH = "assets/audio/SpeedUP.ogg" # スピードアップ取得SE
 SE_SIZE_UP_COLLECT_PATH = "assets/audio/GiantUP.ogg" # 巨大化取得SE
 SE_ITEM_SPAWN_PATH = "assets/audio/item_spawn.ogg" # アイテム出現SE
