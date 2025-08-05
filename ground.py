@@ -2,27 +2,27 @@ import pygame
 import config
 
 class Ground:
-    """地面を管理するクラス。衝突時のアニメーションも含む。"""
+    """Manages the ground, including the animation on collision."""
     def __init__(self):
-        """地面を初期化する。"""
-        # 地面の位置と大きさを保持
+        """Initializes the ground."""
+        # Store the original position and size of the ground
         self.original_rect = pygame.Rect(0, config.GROUND_Y, config.SCREEN_WIDTH, config.SCREEN_HEIGHT - config.GROUND_Y)
         self.rect = self.original_rect.copy()
         self.color = config.GREEN
 
-        # アニメーション関連の属性
+        # Animation-related attributes
         self.is_animating = False
         self.animation_start_time = 0
-        self.current_scale_y = 1.0 # Y方向のスケールのみ変更
+        self.current_scale_y = 1.0 # Only scale in the Y direction
 
     def start_animation(self):
-        """衝突アニメーションを開始する。"""
+        """Starts the collision animation."""
         if not self.is_animating:
             self.is_animating = True
             self.animation_start_time = pygame.time.get_ticks()
 
     def update(self):
-        """地面のアニメーション状態を更新する。"""
+        """Updates the ground's animation state."""
         if not self.is_animating:
             return
 
@@ -33,12 +33,14 @@ class Ground:
             self.current_scale_y = 1.0
             self.rect = self.original_rect.copy()
         else:
+            # Use an ease-out function for a smoother, more natural animation
             progress = elapsed_time / config.GROUND_ANIMATION_DURATION
+            eased_progress = 1 - (1 - progress) ** 2 # Ease-out quad
             min_scale = config.GROUND_ANIMATION_MIN_SCALE
-            self.current_scale_y = min_scale + (1.0 - min_scale) * progress
+            self.current_scale_y = min_scale + (1.0 - min_scale) * eased_progress
             self.rect.height = self.original_rect.height * self.current_scale_y
-            self.rect.bottom = self.original_rect.bottom # 地面の下辺を画面最下部に固定
+            self.rect.bottom = self.original_rect.bottom # Keep the bottom of the ground fixed to the screen bottom
 
     def draw(self, screen):
-        """地面を描画する。"""
+        """Draws the ground."""
         pygame.draw.rect(screen, self.color, self.rect)
