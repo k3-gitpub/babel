@@ -31,13 +31,13 @@ class Ground:
         if elapsed_time >= config.GROUND_ANIMATION_DURATION:
             self.is_animating = False
             self.current_scale_y = 1.0
+            self.rect = self.original_rect.copy()
         else:
             progress = elapsed_time / config.GROUND_ANIMATION_DURATION
             min_scale = config.GROUND_ANIMATION_MIN_SCALE
             self.current_scale_y = min_scale + (1.0 - min_scale) * progress
-
-        self.rect.height = self.original_rect.height * self.current_scale_y
-        self.rect.bottom = self.original_rect.bottom # 地面の下辺を画面最下部に固定
+            self.rect.height = self.original_rect.height * self.current_scale_y
+            self.rect.bottom = self.original_rect.bottom # 地面の下辺を画面最下部に固定
 
     def draw(self, screen):
         """地面を描画する。"""
