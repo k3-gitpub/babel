@@ -1,8 +1,0 @@
-# d:/babel/netlify.toml
-
-# pygbagアプリケーションをNetlifyで正しく動作させるためのヘッダー設定
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cross-Origin-Opener-Policy = "same-origin"
-    Cross-Origin-Embedder-Policy = "require-corp"

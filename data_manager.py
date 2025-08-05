@@ -3,9 +3,7 @@ import os
 from typing import Dict, Any
 
 class DataManager:
-    """
-    ゲームのセーブデータ（ハイスコア、ベストコンボ）をファイルに読み書きするクラス。
-    """
+    """Manages reading and writing game save data (e.g., high score, best combo)."""
     DEFAULT_DATA: Dict[str, Any] = {
         "high_score": 0,
         "best_combo": 0,
@@ -14,20 +12,19 @@ class DataManager:
     }
 
     def __init__(self, filename: str = "save_data.json"):
-        """
-        DataManagerを初期化する。
-        :param filename: セーブデータのファイル名
+        """Initializes the DataManager.
+
+        :param filename: The name of the save data file.
         """
         self.filename = filename
         
     def load_data(self) -> Dict[str, Any]:
-        """
-        セーブデータをファイルから読み込む。
-        ファイルが存在しない、または中身が不正な場合は初期データを返す。
-        :return: セーブデータの辞書
+        """Loads save data from a file.
+        Returns default data if the file doesn't exist or is corrupt.
+        :return: A dictionary containing the save data.
         """
         if not os.path.exists(self.filename):
-            print(f"セーブファイル '{self.filename}' が見つかりません。初期データを作成します。")
+            print(f"Save file '{self.filename}' not found. Creating initial data.")
             return self.DEFAULT_DATA.copy()
 
         try:
@@ -36,20 +33,20 @@ class DataManager:
                 # 読み込んだデータにデフォルト値をマージして、キーの欠損に対応する
                 loaded_data = self.DEFAULT_DATA.copy()
                 loaded_data.update(data)
-                print(f"セーブファイル '{self.filename}' を正常に読み込みました。")
+                print(f"Successfully loaded save file '{self.filename}'.")
                 return loaded_data
         except (json.JSONDecodeError, IOError) as e:
-            print(f"セーブファイル '{self.filename}' の読み込みに失敗しました: {e}。初期データを作成します。")
+            print(f"Failed to load save file '{self.filename}': {e}. Creating initial data.")
             return self.DEFAULT_DATA.copy()
 
     def save_data(self, data: Dict[str, Any]) -> None:
-        """
-        指定されたデータをファイルに保存する。
-        :param data: 保存するデータの辞書
+        """Saves the given data to the file.
+
+        :param data: The dictionary of data to save.
         """
         try:
             with open(self.filename, 'w') as f:
                 json.dump(data, f, indent=4)
-            print(f"データを '{self.filename}' に正常に保存しました。")
+            print(f"Data successfully saved to '{self.filename}'.")
         except IOError as e:
-            print(f"データ '{self.filename}' の保存に失敗しました: {e}")
+            print(f"Failed to save data to '{self.filename}': {e}")
