@@ -9,19 +9,28 @@ print("--- EXECUTING main.py ---")
 
 async def main():
     """
-    ゲームを起動するための非同期メイン関数。
-    Webビルド時にアセットを登録する処理もここで行う。
+    Asynchronous main function to launch the game.
+    This is also where assets are registered for the web build.
     """
-    # --- Webビルド(pygbag)のためのアセット登録と初期化 ---
+    # --- Asset registration and initialization for web build (pygbag) ---
     try:
         from pygbag import preloader
         await preloader.run(log_missing=True)
     except ImportError:
-        # pygbagがインストールされていないローカル実行環境では何もしない
+        # Do nothing in a local execution environment where pygbag is not installed
         pass
 
     game = Game()
     await game.run()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except RuntimeError as e:
+        # pygbagのようなWeb環境では、すでにイベントループが実行されているため、
+        # このエラーを捕捉して既存のループ上でタスクを開始します。
+        if "cannot run loop while another loop is running" in str(e):
+            loop = asyncio.get_event_loop()
+            loop.create_task(main())
+        else:
+            raise
